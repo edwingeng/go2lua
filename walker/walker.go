@@ -274,8 +274,23 @@ func (this *Walker) Walk(node ast.Node) {
 
 	case *ast.IncDecStmt:
 		this.Walk(n.X)
+		switch n.Tok {
+		case token.INC:
+			this.Print(" = ")
+			this.Walk(n.X)
+			this.Print(" + 1")
+		case token.DEC:
+			this.Print(" = ")
+			this.Walk(n.X)
+			this.Print(" - 1")
+		default:
+			panic(fmt.Errorf("unexpected token: %v", n.Tok))
+		}
 
 	case *ast.AssignStmt:
+		if n.Tok == token.DEFINE {
+			this.Print("local ")
+		}
 		this.walkExprList(n.Lhs)
 		this.Print(" = ")
 		this.walkExprList(n.Rhs)
@@ -293,6 +308,8 @@ func (this *Walker) Walk(node ast.Node) {
 	case *ast.BranchStmt:
 		if n.Label != nil {
 			this.Walk(n.Label)
+		} else {
+			this.Print("break")
 		}
 
 	case *ast.BlockStmt:
@@ -329,7 +346,7 @@ func (this *Walker) Walk(node ast.Node) {
 
 	case *ast.CaseClause:
 		this.walkExprList(n.List)
-		this.walkStmtList(n.Body, "; ")
+		this.walkStmtList(n.Body, "")
 
 	case *ast.SwitchStmt:
 		if n.Init != nil {
@@ -358,15 +375,31 @@ func (this *Walker) Walk(node ast.Node) {
 
 	case *ast.ForStmt:
 		if n.Init != nil {
+			this.Println("do")
+			this.indent++
 			this.Walk(n.Init)
+			this.Println()
 		}
 		if n.Cond != nil {
+			this.Print("while ")
 			this.Walk(n.Cond)
-		}
-		if n.Post != nil {
-			this.Walk(n.Post)
+			this.Println(" do")
+		} else {
+			this.Println("while true do")
 		}
 		this.Walk(n.Body)
+		if n.Post != nil {
+			this.indent++
+			this.Walk(n.Post)
+			this.indent--
+			this.Println()
+		}
+
+		if n.Init != nil {
+			this.Println("end")
+			this.indent--
+		}
+		this.Print("end")
 
 	case *ast.RangeStmt:
 		if n.Key != nil {

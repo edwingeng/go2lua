@@ -70,7 +70,7 @@ func (this *Parser) Parse() error {
 	return err
 }
 
-func (this *Parser) Output(dir string) error {
+func (this *Parser) Output(dir string) {
 	for _, pkg := range this.pkgs {
 		for _, syn := range pkg.Syntax {
 			f1 := pkg.Fset.Position(syn.Package).Filename
@@ -86,12 +86,10 @@ func (this *Parser) Output(dir string) error {
 			f3 := strings.TrimSuffix(f2, ".go") + ".lua"
 			f4 := filepath.Join(dir, f3)
 			if err := ioutil.WriteFile(f4, w.Bytes(), 0644); err != nil {
-				return err
+				panic(err)
 			}
 		}
 	}
-
-	return nil
 }
 
 func (this *Parser) PrintDetails(debugMode bool) {

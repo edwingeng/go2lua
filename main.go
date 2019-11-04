@@ -34,5 +34,9 @@ func main() {
 		panic(err)
 	}
 
-	p.PrintDetails(*astTree)
+	if *outputDir != "" {
+		p.Output(*outputDir)
+	} else {
+		p.PrintDetails(*astTree)
+	}
 }

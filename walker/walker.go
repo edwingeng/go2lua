@@ -29,14 +29,17 @@ type Walker struct {
 	bytes.Buffer
 	fset *token.FileSet
 
-	funcInit   bool
 	nextNumber int
 	indent     int
+
+	FuncInit bool
+	Elseifs  map[ast.Node]struct{}
 }
 
 func NewWalker(fset *token.FileSet) *Walker {
 	w := &Walker{
-		fset: fset,
+		fset:    fset,
+		Elseifs: make(map[ast.Node]struct{}),
 	}
 	return w
 }
@@ -65,13 +68,6 @@ func (this *Walker) Printf(format string, a ...interface{}) {
 	_, _ = fmt.Fprintf(&this.Buffer, format, a...)
 }
 
-func (this *Walker) Printw(a ...interface{}) {
-	this.PrintIndent()
-	for _, v := range a {
-		_, _ = fmt.Fprintf(&this.Buffer, "%v ", v)
-	}
-}
-
 func (this *Walker) printError(x interface{}) {
 	err := ast.Fprint(os.Stderr, this.fset, x, nil)
 	if err != nil {
@@ -87,14 +83,17 @@ func (this *Walker) NextName_NonameFunc() string {
 func (this *Walker) walkIdentList(list []*ast.Ident) {
 	for i, x := range list {
 		if i > 0 {
-			this.Printw(",")
+			this.Print(", ")
 		}
 		this.Walk(x)
 	}
 }
 
 func (this *Walker) walkExprList(list []ast.Expr) {
-	for _, x := range list {
+	for i, x := range list {
+		if i > 0 {
+			this.Print(", ")
+		}
 		this.Walk(x)
 	}
 }
@@ -138,7 +137,7 @@ func (this *Walker) Walk(node ast.Node) {
 	case *ast.FieldList:
 		for i, f := range n.List {
 			if i > 0 {
-				this.Printw(",")
+				this.Print(", ")
 			}
 			this.Walk(f)
 		}
@@ -288,7 +287,7 @@ func (this *Walker) Walk(node ast.Node) {
 		this.Walk(n.Call)
 
 	case *ast.ReturnStmt:
-		this.Printw("return")
+		this.Print("return ")
 		this.walkExprList(n.Results)
 
 	case *ast.BranchStmt:
@@ -305,15 +304,28 @@ func (this *Walker) Walk(node ast.Node) {
 		if n.Init != nil {
 			this.Walk(n.Init)
 		}
-		this.Printw("if")
+		this.Print("if ")
 		this.Walk(n.Cond)
 
 		this.Println(" then")
 		this.Walk(n.Body)
+		var elif ast.Node
 		if n.Else != nil {
+			if nn, ok := n.Else.(*ast.IfStmt); ok {
+				this.Print("else")
+				this.Elseifs[nn] = struct{}{}
+				elif = nn
+			} else {
+				this.Println("else")
+			}
 			this.Walk(n.Else)
 		}
-		this.Println("end")
+		if _, ok := this.Elseifs[n]; !ok {
+			this.Print("end")
+		}
+		if elif != nil {
+			delete(this.Elseifs, elif)
+		}
 
 	case *ast.CaseClause:
 		this.walkExprList(n.List)
@@ -415,7 +427,7 @@ func (this *Walker) Walk(node ast.Node) {
 
 	case *ast.FuncDecl:
 		if n.Name.Name == "init" && n.Recv == nil {
-			this.funcInit = true
+			this.FuncInit = true
 		}
 
 		if n.Doc != nil {
@@ -427,7 +439,7 @@ func (this *Walker) Walk(node ast.Node) {
 
 		first := n.Name.Name[0]
 		if first >= 'a' && first <= 'z' {
-			this.Printw("local")
+			this.Print("local ")
 		}
 
 		this.Walk(n.Name)
@@ -448,7 +460,7 @@ func (this *Walker) Walk(node ast.Node) {
 			this.Walk(n.Doc)
 		}
 
-		this.Printw("-- package:")
+		this.Print("-- package: ")
 		this.Walk(n.Name)
 		this.Println()
 		this.Println()
@@ -458,7 +470,7 @@ func (this *Walker) Walk(node ast.Node) {
 		// visited already through the individual
 		// nodes
 
-		if this.funcInit {
+		if this.FuncInit {
 			this.Println("return init")
 		}
 

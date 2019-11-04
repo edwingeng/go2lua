@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"io/ioutil"
@@ -29,7 +30,7 @@ func NewParser(pkgPaths []string, opts ...Option) *Parser {
 	return p
 }
 
-func (this *Parser) commonPrefixLen() int {
+func (this *Parser) commonPrefix() string {
 	var allFiles []string
 	for _, pkg := range this.pkgs {
 		for _, syn := range pkg.Syntax {
@@ -56,7 +57,10 @@ func (this *Parser) commonPrefixLen() int {
 		}
 	}
 
-	return leN
+	if leN > 0 {
+		return allFiles[0][:leN]
+	}
+	return ""
 }
 
 func (this *Parser) Parse() error {
@@ -90,7 +94,7 @@ func (this *Parser) Output(dir string) error {
 }
 
 func (this *Parser) PrintDetails(debugMode bool) {
-	commonPrefixLen := this.commonPrefixLen()
+	commonPrefix := this.commonPrefix()
 	for _, pkg := range this.pkgs {
 		for _, syn := range pkg.Syntax {
 			f1 := pkg.Fset.Position(syn.Package).Filename
@@ -99,18 +103,23 @@ func (this *Parser) PrintDetails(debugMode bool) {
 			}
 
 			if debugMode {
-				fmt.Println("=======###", f1[commonPrefixLen:])
+				fmt.Println("=======###", f1[len(commonPrefix):])
 				fmt.Println()
-				if err := ast.Print(pkg.Fset, syn); err != nil {
+				var buf bytes.Buffer
+				if err := ast.Fprint(&buf, pkg.Fset, syn, nil); err != nil {
 					panic(err)
 				}
-				fmt.Println()
+				str := buf.String()
+				if len(commonPrefix) > 0 {
+					str = strings.ReplaceAll(str, commonPrefix, "")
+				}
+				fmt.Println(str)
 			}
 
 			w := walker.NewWalker(pkg.Fset)
 			w.Walk(syn)
 
-			fmt.Println("==========", f1[commonPrefixLen:])
+			fmt.Println("==========", f1[len(commonPrefix):])
 			fmt.Println()
 			fmt.Println(w.String())
 		}

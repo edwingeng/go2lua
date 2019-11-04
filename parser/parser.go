@@ -81,6 +81,7 @@ func (this *Parser) Output(dir string) {
 			w := walker.NewWalker(pkg.Fset)
 			w.Initialize(syn)
 			w.Walk(syn)
+			w.Trim()
 
 			f2 := filepath.Base(f1)
 			f3 := strings.TrimSuffix(f2, ".go") + ".lua"
@@ -118,6 +119,7 @@ func (this *Parser) PrintDetails(debugMode bool) {
 			w := walker.NewWalker(pkg.Fset)
 			w.Initialize(syn)
 			w.Walk(syn)
+			w.Trim()
 
 			fmt.Println("==========", f1[len(commonPrefix):])
 			fmt.Println()

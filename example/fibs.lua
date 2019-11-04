@@ -6,4 +6,3 @@ Fibs = function(n)
     end
     return Fibs(n - 1) + Fibs(n - 2)
 end
-

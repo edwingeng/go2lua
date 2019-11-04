@@ -619,3 +619,11 @@ func (this *Walker) Walk(node ast.Node) {
 		panic(fmt.Sprintf("ast.Walk: unexpected node type %T", n))
 	}
 }
+
+func (this *Walker) Trim() {
+	bts := this.Bytes()
+	bts = bytes.TrimRight(bts, "\n")
+	if n := len(bts); n < this.Len() {
+		this.Buffer.Truncate(n + 1)
+	}
+}

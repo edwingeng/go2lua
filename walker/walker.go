@@ -2,6 +2,7 @@ package walker
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -29,17 +30,20 @@ type Walker struct {
 	bytes.Buffer
 	fset *token.FileSet
 
-	nextNumber int
-	indent     int
+	nextNums map[string]int
+	indent   int
 
-	FuncInit bool
-	Elseifs  map[ast.Node]struct{}
+	FuncInit   bool
+	Elseifs    map[ast.Node]struct{}
+	LoopLabels map[ast.Node]string
 }
 
 func NewWalker(fset *token.FileSet) *Walker {
 	w := &Walker{
-		fset:    fset,
-		Elseifs: make(map[ast.Node]struct{}),
+		fset:       fset,
+		nextNums:   make(map[string]int),
+		Elseifs:    make(map[ast.Node]struct{}),
+		LoopLabels: make(map[ast.Node]string),
 	}
 	return w
 }
@@ -68,16 +72,18 @@ func (this *Walker) Printf(format string, a ...interface{}) {
 	_, _ = fmt.Fprintf(&this.Buffer, format, a...)
 }
 
-func (this *Walker) printError(x interface{}) {
-	err := ast.Fprint(os.Stderr, this.fset, x, nil)
-	if err != nil {
+func (this *Walker) printError(err error, node ast.Node) {
+	var buf bytes.Buffer
+	_, _ = fmt.Fprintln(&buf, err.Error()+".")
+	if err := ast.Fprint(&buf, this.fset, node, nil); err != nil {
 		panic(err)
 	}
+	_, _ = os.Stderr.Write(buf.Bytes())
 }
 
-func (this *Walker) nextName_NonameFunc() string {
-	this.nextNumber++
-	return fmt.Sprintf("noname_func_%d", this.nextNumber)
+func (this *Walker) makeUniqueName(key string) string {
+	this.nextNums[key]++
+	return fmt.Sprintf("xxx_%s_%d", key, this.nextNums[key])
 }
 
 func (this *Walker) isCallExpr_MakeMap(node ast.Node) bool {
@@ -93,6 +99,64 @@ func (this *Walker) isCallExpr_MakeMap(node ast.Node) bool {
 		}
 	}
 	return false
+}
+
+func (this *Walker) Initialize(node ast.Node) {
+	if node == nil {
+		return
+	}
+	var stack []ast.Node
+	ast.Inspect(node, func(node ast.Node) bool {
+		if node == nil {
+			stack = stack[:len(stack)-1]
+			return true
+		}
+		stack = append(stack, node)
+		switch n := node.(type) {
+		case *ast.ForStmt:
+		case *ast.RangeStmt:
+		case *ast.BranchStmt:
+			switch n.Tok {
+			case token.CONTINUE:
+				if n.Label == nil {
+					var loopNode ast.Node
+					for i := len(stack) - 1; i >= 0 && loopNode == nil; i-- {
+						switch sn := stack[i].(type) {
+						case *ast.ForStmt, *ast.RangeStmt:
+							loopNode = sn
+							if _, ok := this.LoopLabels[sn]; !ok {
+								this.LoopLabels[sn] = this.makeUniqueName("loop")
+							}
+						}
+					}
+					if loopNode == nil {
+						this.printError(fmt.Errorf("unexpected token: %s", n.Tok), node)
+					} else {
+						this.LoopLabels[node] = this.LoopLabels[loopNode]
+					}
+				}
+			}
+		}
+		return true
+	})
+}
+
+func (this *Walker) forStmt_Continues(node *ast.ForStmt) (found, immediate bool, labels []string) {
+	m := make(map[string]struct{})
+	ast.Inspect(node, func(node ast.Node) bool {
+		if n, ok := node.(*ast.BranchStmt); ok {
+			if n.Tok == token.CONTINUE {
+				found = true
+
+				m[n.Label.Name] = struct{}{}
+			}
+		}
+		return true
+	})
+	for k := range m {
+		labels = append(labels, k)
+	}
+	return
 }
 
 func (this *Walker) walkIdentList(list []*ast.Ident) {
@@ -163,7 +227,7 @@ func (this *Walker) Walk(node ast.Node) {
 
 	// Expressions
 	case *ast.BadExpr:
-		this.printError(n)
+		this.printError(errors.New("bad expression detected"), n)
 
 	case *ast.Ident:
 		if str, ok := go2LuaFuncMap[n.Name]; ok {
@@ -305,7 +369,7 @@ func (this *Walker) Walk(node ast.Node) {
 			this.Walk(n.X)
 			this.Print(" - 1")
 		default:
-			panic(fmt.Errorf("unexpected token: %v", n.Tok))
+			panic(fmt.Errorf("unexpected token: %s", n.Tok))
 		}
 
 	case *ast.AssignStmt:
@@ -330,7 +394,12 @@ func (this *Walker) Walk(node ast.Node) {
 		if n.Label != nil {
 			this.Walk(n.Label)
 		} else {
-			this.Print("break")
+			switch n.Tok {
+			case token.BREAK:
+				this.Print("break")
+			case token.CONTINUE:
+				this.Printf("goto %s", this.LoopLabels[n])
+			}
 		}
 
 	case *ast.BlockStmt:
@@ -409,6 +478,10 @@ func (this *Walker) Walk(node ast.Node) {
 			this.Println("while true do")
 		}
 		this.Walk(n.Body)
+
+		if label, ok := this.LoopLabels[n]; ok {
+			this.Printf("::%s::\n", label)
+		}
 		if n.Post != nil {
 			this.indent++
 			this.Walk(n.Post)

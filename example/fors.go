@@ -35,6 +35,15 @@ func forLoop5() {
 	}
 }
 
+func forLoop6() {
+	for i := 0; i < 3; i++ {
+		if i >= 1 {
+			continue
+		}
+		println(i)
+	}
+}
+
 func forRangeMap() {
 	m := make(map[string]int)
 	m["a"] = 100

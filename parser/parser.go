@@ -79,6 +79,7 @@ func (this *Parser) Output(dir string) error {
 			}
 
 			w := walker.NewWalker(pkg.Fset)
+			w.Initialize(syn)
 			w.Walk(syn)
 
 			f2 := filepath.Base(f1)
@@ -117,6 +118,7 @@ func (this *Parser) PrintDetails(debugMode bool) {
 			}
 
 			w := walker.NewWalker(pkg.Fset)
+			w.Initialize(syn)
 			w.Walk(syn)
 
 			fmt.Println("==========", f1[len(commonPrefix):])

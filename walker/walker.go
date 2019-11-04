@@ -79,7 +79,10 @@ func (this *Walker) NextName_NonameFunc() string {
 }
 
 func (this *Walker) walkIdentList(list []*ast.Ident) {
-	for _, x := range list {
+	for i, x := range list {
+		if i > 0 {
+			this.Printw(",")
+		}
 		this.Walk(x)
 	}
 }
@@ -90,9 +93,10 @@ func (this *Walker) walkExprList(list []ast.Expr) {
 	}
 }
 
-func (this *Walker) walkStmtList(list []ast.Stmt) {
+func (this *Walker) walkStmtList(list []ast.Stmt, sep string) {
 	for _, x := range list {
 		this.Walk(x)
+		this.Print(sep)
 	}
 }
 
@@ -118,7 +122,6 @@ func (this *Walker) Walk(node ast.Node) {
 			this.Walk(n.Doc)
 		}
 		this.walkIdentList(n.Names)
-		this.Walk(n.Type)
 		if n.Tag != nil {
 			this.Walk(n.Tag)
 		}
@@ -127,7 +130,10 @@ func (this *Walker) Walk(node ast.Node) {
 		}
 
 	case *ast.FieldList:
-		for _, f := range n.List {
+		for i, f := range n.List {
+			if i > 0 {
+				this.Printw(",")
+			}
 			this.Walk(f)
 		}
 
@@ -204,6 +210,7 @@ func (this *Walker) Walk(node ast.Node) {
 
 	case *ast.BinaryExpr:
 		this.Walk(n.X)
+		this.Printf(" %s ", n.Op)
 		this.Walk(n.Y)
 
 	case *ast.KeyValueExpr:
@@ -223,9 +230,6 @@ func (this *Walker) Walk(node ast.Node) {
 	case *ast.FuncType:
 		if n.Params != nil {
 			this.Walk(n.Params)
-		}
-		if n.Results != nil {
-			this.Walk(n.Results)
 		}
 
 	case *ast.InterfaceType:
@@ -264,6 +268,7 @@ func (this *Walker) Walk(node ast.Node) {
 
 	case *ast.AssignStmt:
 		this.walkExprList(n.Lhs)
+		this.Print(" = ")
 		this.walkExprList(n.Rhs)
 
 	case *ast.GoStmt:
@@ -273,6 +278,7 @@ func (this *Walker) Walk(node ast.Node) {
 		this.Walk(n.Call)
 
 	case *ast.ReturnStmt:
+		this.Printw("return")
 		this.walkExprList(n.Results)
 
 	case *ast.BranchStmt:
@@ -282,7 +288,7 @@ func (this *Walker) Walk(node ast.Node) {
 
 	case *ast.BlockStmt:
 		this.indent++
-		this.walkStmtList(n.List)
+		this.walkStmtList(n.List, "\n")
 		this.indent--
 
 	case *ast.IfStmt:
@@ -297,7 +303,7 @@ func (this *Walker) Walk(node ast.Node) {
 
 	case *ast.CaseClause:
 		this.walkExprList(n.List)
-		this.walkStmtList(n.Body)
+		this.walkStmtList(n.Body, "; ")
 
 	case *ast.SwitchStmt:
 		if n.Init != nil {
@@ -319,7 +325,7 @@ func (this *Walker) Walk(node ast.Node) {
 		if n.Comm != nil {
 			this.Walk(n.Comm)
 		}
-		this.walkStmtList(n.Body)
+		this.walkStmtList(n.Body, "")
 
 	case *ast.SelectStmt:
 		this.Walk(n.Body)

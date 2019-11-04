@@ -17,6 +17,12 @@ var (
 		"print":   "io.write",
 		"println": "print",
 	}
+
+	go2LuaOperMap = map[string]string{
+		`&&`: "and",
+		`||`: "or",
+		`!`:  "not",
+	}
 )
 
 type Walker struct {
@@ -200,7 +206,7 @@ func (this *Walker) Walk(node ast.Node) {
 
 		this.Print("(")
 		this.walkExprList(n.Args)
-		this.Println(")")
+		this.Print(")")
 
 	case *ast.StarExpr:
 		this.Walk(n.X)
@@ -210,7 +216,11 @@ func (this *Walker) Walk(node ast.Node) {
 
 	case *ast.BinaryExpr:
 		this.Walk(n.X)
-		this.Printf(" %s ", n.Op)
+		if str, ok := go2LuaOperMap[n.Op.String()]; ok {
+			this.Printf(" %s ", str)
+		} else {
+			this.Printf(" %s ", n.Op)
+		}
 		this.Walk(n.Y)
 
 	case *ast.KeyValueExpr:
@@ -295,11 +305,15 @@ func (this *Walker) Walk(node ast.Node) {
 		if n.Init != nil {
 			this.Walk(n.Init)
 		}
+		this.Printw("if")
 		this.Walk(n.Cond)
+
+		this.Println(" then")
 		this.Walk(n.Body)
 		if n.Else != nil {
 			this.Walk(n.Else)
 		}
+		this.Println("end")
 
 	case *ast.CaseClause:
 		this.walkExprList(n.List)

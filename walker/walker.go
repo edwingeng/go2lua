@@ -75,9 +75,24 @@ func (this *Walker) printError(x interface{}) {
 	}
 }
 
-func (this *Walker) NextName_NonameFunc() string {
+func (this *Walker) nextName_NonameFunc() string {
 	this.nextNumber++
 	return fmt.Sprintf("noname_func_%d", this.nextNumber)
+}
+
+func (this *Walker) isCallExpr_MakeMap(node ast.Node) bool {
+	if n, ok := node.(*ast.CallExpr); ok {
+		if funcExpr, ok := n.Fun.(*ast.Ident); ok {
+			if funcExpr.Name == "make" {
+				if len(n.Args) > 0 {
+					if _, ok := n.Args[0].(*ast.MapType); ok {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (this *Walker) walkIdentList(list []*ast.Ident) {
@@ -94,7 +109,11 @@ func (this *Walker) walkExprList(list []ast.Expr) {
 		if i > 0 {
 			this.Print(", ")
 		}
-		this.Walk(x)
+		if this.isCallExpr_MakeMap(x) {
+			this.Print("{}")
+		} else {
+			this.Walk(x)
+		}
 	}
 }
 
@@ -180,7 +199,9 @@ func (this *Walker) Walk(node ast.Node) {
 
 	case *ast.IndexExpr:
 		this.Walk(n.X)
+		this.Print("[")
 		this.Walk(n.Index)
+		this.Print("]")
 
 	case *ast.SliceExpr:
 		this.Walk(n.X)
@@ -402,14 +423,23 @@ func (this *Walker) Walk(node ast.Node) {
 		this.Print("end")
 
 	case *ast.RangeStmt:
+		this.Print("for ")
 		if n.Key != nil {
 			this.Walk(n.Key)
+			this.Print(", ")
+		} else {
+			this.Print("_, ")
 		}
 		if n.Value != nil {
 			this.Walk(n.Value)
 		}
+
+		this.Print(" in pairs(")
 		this.Walk(n.X)
+		this.Println(") do")
+
 		this.Walk(n.Body)
+		this.Print("end")
 
 	// Declarations
 	case *ast.ImportSpec:

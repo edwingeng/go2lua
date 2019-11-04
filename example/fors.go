@@ -11,3 +11,36 @@ func forLoop2() {
 		// Empty
 	}
 }
+
+func forLoop3() {
+	i := 0
+	for i < 1 {
+		break
+	}
+}
+
+func forLoop4() {
+	for i := 0; ; {
+		println(i)
+		break
+	}
+}
+
+func forLoop5() {
+	i := 0
+	for ; ; i++ {
+		if i >= 1 {
+			break
+		}
+	}
+}
+
+func forRangeMap() {
+	m := make(map[string]int)
+	m["a"] = 100
+	m["b"] = 200
+
+	for k, v := range m {
+		println(k, v)
+	}
+}

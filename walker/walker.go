@@ -29,6 +29,11 @@ var (
 	}
 )
 
+type gotoLabelInfo struct {
+	funcNode ast.Node
+	name     string
+}
+
 type Walker struct {
 	Fset *token.FileSet
 	root ast.Node
@@ -43,6 +48,7 @@ type Walker struct {
 	ElseIfs        map[ast.Node]struct{}
 	BreakLabels    map[ast.Node]string
 	ContinueLabels map[ast.Node]string
+	GotoLabels     map[gotoLabelInfo]struct{}
 }
 
 func NewWalker(fset *token.FileSet, node ast.Node) *Walker {
@@ -53,6 +59,7 @@ func NewWalker(fset *token.FileSet, node ast.Node) *Walker {
 		ElseIfs:        make(map[ast.Node]struct{}),
 		BreakLabels:    make(map[ast.Node]string),
 		ContinueLabels: make(map[ast.Node]string),
+		GotoLabels:     make(map[gotoLabelInfo]struct{}),
 	}
 	return w
 }
@@ -108,7 +115,7 @@ func (this *Walker) printf(format string, a ...interface{}) {
 
 func (this *Walker) printError(err error, node ast.Node) {
 	var buf bytes.Buffer
-	_, _ = fmt.Fprintln(&buf, err.Error()+".")
+	_, _ = fmt.Fprintf(&buf, "%+v\n", err.Error())
 	if err := ast.Fprint(&buf, this.Fset, node, nil); err != nil {
 		panic(err)
 	}
@@ -139,14 +146,24 @@ func (this *Walker) initialize() {
 	if this.root == nil {
 		return
 	}
+
 	var stack []ast.Node
+	var funcStack []ast.Node
 	ast.Inspect(this.root, func(node ast.Node) bool {
 		if node == nil {
+			n := stack[len(stack)-1]
+			switch n.(type) {
+			case *ast.FuncLit, *ast.FuncDecl:
+				funcStack = funcStack[:len(funcStack)-1]
+			}
 			stack = stack[:len(stack)-1]
 			return true
 		}
+
 		stack = append(stack, node)
 		switch n := node.(type) {
+		case *ast.FuncLit, *ast.FuncDecl:
+			funcStack = append(funcStack, node)
 		case *ast.BranchStmt:
 			switch {
 			case n.Label == nil && n.Tok == token.CONTINUE:
@@ -175,7 +192,7 @@ func (this *Walker) initialize() {
 				loopNodeLabel = this.ContinueLabels[loopNode]
 				this.ContinueLabels[node] = loopNodeLabel
 
-			case n.Label != nil && (n.Tok == token.BREAK || n.Tok == token.CONTINUE):
+			case n.Label != nil && n.Label.Name != "" && (n.Tok == token.BREAK || n.Tok == token.CONTINUE):
 				var loopNode ast.Node
 				var err error
 				for i := len(stack) - 1; i >= 0 && loopNode == nil; i-- {
@@ -211,6 +228,13 @@ func (this *Walker) initialize() {
 				default:
 					panic("IMPOSSIBLE")
 				}
+
+			case n.Label != nil && n.Label.Name != "" && n.Tok == token.GOTO:
+				key := gotoLabelInfo{
+					funcNode: funcStack[len(funcStack)-1],
+					name:     n.Label.Name,
+				}
+				this.GotoLabels[key] = struct{}{}
 			}
 		}
 
@@ -243,16 +267,16 @@ func (this *Walker) forStmt_Continues(node *ast.ForStmt) (found, immediate bool,
 	return
 }
 
-func (this *Walker) walkIdentList(list []*ast.Ident) {
+func (this *Walker) walkIdentList(list []*ast.Ident, funcNode ast.Node) {
 	for i, x := range list {
 		if i > 0 {
 			this.print(", ")
 		}
-		this.walkImpl(x)
+		this.walkImpl(x, funcNode)
 	}
 }
 
-func (this *Walker) walkExprList(list []ast.Expr) {
+func (this *Walker) walkExprList(list []ast.Expr, funcNode ast.Node) {
 	for i, x := range list {
 		if i > 0 {
 			this.print(", ")
@@ -260,23 +284,23 @@ func (this *Walker) walkExprList(list []ast.Expr) {
 		if this.isCallExpr_MakeMap(x) {
 			this.print("{}")
 		} else {
-			this.walkImpl(x)
+			this.walkImpl(x, funcNode)
 		}
 	}
 }
 
-func (this *Walker) walkStmtList(list []ast.Stmt, newline bool) {
+func (this *Walker) walkStmtList(list []ast.Stmt, newline bool, funcNode ast.Node) {
 	for _, x := range list {
-		this.walkImpl(x)
+		this.walkImpl(x, funcNode)
 		if newline {
 			this.println()
 		}
 	}
 }
 
-func (this *Walker) walkDeclList(list []ast.Decl) {
+func (this *Walker) walkDeclList(list []ast.Decl, funcNode ast.Node) {
 	for _, x := range list {
-		this.walkImpl(x)
+		this.walkImpl(x, funcNode)
 	}
 }
 
@@ -286,11 +310,11 @@ func (this *Walker) Walk() {
 	}
 
 	this.initialize()
-	this.walkImpl(this.root)
+	this.walkImpl(this.root, nil)
 	this.trim()
 }
 
-func (this *Walker) walkImpl(node ast.Node) {
+func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 	this.current = node
 	switch n := node.(type) {
 	// Comments and fields
@@ -299,19 +323,19 @@ func (this *Walker) walkImpl(node ast.Node) {
 
 	case *ast.CommentGroup:
 		for _, c := range n.List {
-			this.walkImpl(c)
+			this.walkImpl(c, funcNode)
 		}
 
 	case *ast.Field:
 		if n.Doc != nil {
-			this.walkImpl(n.Doc)
+			this.walkImpl(n.Doc, funcNode)
 		}
-		this.walkIdentList(n.Names)
+		this.walkIdentList(n.Names, funcNode)
 		if n.Tag != nil {
-			this.walkImpl(n.Tag)
+			this.walkImpl(n.Tag, funcNode)
 		}
 		if n.Comment != nil {
-			this.walkImpl(n.Comment)
+			this.walkImpl(n.Comment, funcNode)
 		}
 
 	case *ast.FieldList:
@@ -319,7 +343,7 @@ func (this *Walker) walkImpl(node ast.Node) {
 			if i > 0 {
 				this.print(", ")
 			}
-			this.walkImpl(f)
+			this.walkImpl(f, funcNode)
 		}
 
 	// Expressions
@@ -338,134 +362,142 @@ func (this *Walker) walkImpl(node ast.Node) {
 
 	case *ast.Ellipsis:
 		if n.Elt != nil {
-			this.walkImpl(n.Elt)
+			this.walkImpl(n.Elt, funcNode)
 		}
 
 	case *ast.FuncLit:
-		this.walkImpl(n.Type)
-		this.walkImpl(n.Body)
+		this.walkImpl(n.Type, n)
+		this.walkImpl(n.Body, n)
 
 	case *ast.CompositeLit:
 		if n.Type != nil {
-			this.walkImpl(n.Type)
+			this.walkImpl(n.Type, funcNode)
 		}
-		this.walkExprList(n.Elts)
+		this.walkExprList(n.Elts, funcNode)
 
 	case *ast.ParenExpr:
-		this.walkImpl(n.X)
+		this.walkImpl(n.X, funcNode)
 
 	case *ast.SelectorExpr:
-		this.walkImpl(n.X)
-		this.walkImpl(n.Sel)
+		this.walkImpl(n.X, funcNode)
+		this.walkImpl(n.Sel, funcNode)
 
 	case *ast.IndexExpr:
-		this.walkImpl(n.X)
+		this.walkImpl(n.X, funcNode)
 		this.print("[")
-		this.walkImpl(n.Index)
+		this.walkImpl(n.Index, funcNode)
 		this.print("]")
 
 	case *ast.SliceExpr:
-		this.walkImpl(n.X)
+		this.walkImpl(n.X, funcNode)
 		if n.Low != nil {
-			this.walkImpl(n.Low)
+			this.walkImpl(n.Low, funcNode)
 		}
 		if n.High != nil {
-			this.walkImpl(n.High)
+			this.walkImpl(n.High, funcNode)
 		}
 		if n.Max != nil {
-			this.walkImpl(n.Max)
+			this.walkImpl(n.Max, funcNode)
 		}
 
 	case *ast.TypeAssertExpr:
-		this.walkImpl(n.X)
+		this.walkImpl(n.X, funcNode)
 		if n.Type != nil {
-			this.walkImpl(n.Type)
+			this.walkImpl(n.Type, funcNode)
 		}
 
 	case *ast.CallExpr:
-		this.walkImpl(n.Fun)
+		this.walkImpl(n.Fun, funcNode)
 
 		this.print("(")
-		this.walkExprList(n.Args)
+		this.walkExprList(n.Args, funcNode)
 		this.print(")")
 
 	case *ast.StarExpr:
-		this.walkImpl(n.X)
+		this.walkImpl(n.X, funcNode)
 
 	case *ast.UnaryExpr:
-		this.walkImpl(n.X)
+		this.walkImpl(n.X, funcNode)
 
 	case *ast.BinaryExpr:
-		this.walkImpl(n.X)
+		this.walkImpl(n.X, funcNode)
 		if str, ok := go2LuaOperMap[n.Op.String()]; ok {
 			this.printf(" %s ", str)
 		} else {
 			this.printf(" %s ", n.Op)
 		}
-		this.walkImpl(n.Y)
+		this.walkImpl(n.Y, funcNode)
 
 	case *ast.KeyValueExpr:
-		this.walkImpl(n.Key)
-		this.walkImpl(n.Value)
+		this.walkImpl(n.Key, funcNode)
+		this.walkImpl(n.Value, funcNode)
 
 	// Types
 	case *ast.ArrayType:
 		if n.Len != nil {
-			this.walkImpl(n.Len)
+			this.walkImpl(n.Len, funcNode)
 		}
-		this.walkImpl(n.Elt)
+		this.walkImpl(n.Elt, funcNode)
 
 	case *ast.StructType:
-		this.walkImpl(n.Fields)
+		this.walkImpl(n.Fields, funcNode)
 
 	case *ast.FuncType:
 		if n.Params != nil {
-			this.walkImpl(n.Params)
+			this.walkImpl(n.Params, funcNode)
 		}
 
 	case *ast.InterfaceType:
-		this.walkImpl(n.Methods)
+		this.walkImpl(n.Methods, funcNode)
 
 	case *ast.MapType:
-		this.walkImpl(n.Key)
-		this.walkImpl(n.Value)
+		this.walkImpl(n.Key, funcNode)
+		this.walkImpl(n.Value, funcNode)
 
 	case *ast.ChanType:
-		this.walkImpl(n.Value)
+		this.walkImpl(n.Value, funcNode)
 
 	// Statements
 	case *ast.BadStmt:
 		// nothing to do
 
 	case *ast.DeclStmt:
-		this.walkImpl(n.Decl)
+		this.walkImpl(n.Decl, funcNode)
 
 	case *ast.EmptyStmt:
 		// nothing to do
 
 	case *ast.LabeledStmt:
-		this.indent--
-		this.printf("::%s::\n", n.Label.Name)
-		this.indent++
-		this.walkImpl(n.Stmt)
+		key := gotoLabelInfo{
+			funcNode: funcNode,
+			name:     n.Label.Name,
+		}
+		if _, ok := this.GotoLabels[key]; ok {
+			this.indent--
+			this.printf("::%s::\n", n.Label.Name)
+			this.indent++
+		} else {
+			this.print()
+		}
+		this.walkImpl(n.Stmt, funcNode)
 
 	case *ast.ExprStmt:
-		this.walkImpl(n.X)
+		this.walkImpl(n.X, funcNode)
 
 	case *ast.SendStmt:
-		this.walkImpl(n.Chan)
-		this.walkImpl(n.Value)
+		this.walkImpl(n.Chan, funcNode)
+		this.walkImpl(n.Value, funcNode)
 
 	case *ast.IncDecStmt:
-		this.walkImpl(n.X)
+		this.walkImpl(n.X, funcNode)
 		switch n.Tok {
 		case token.INC:
 			this.print(" = ")
-			this.walkImpl(n.X)
+			this.walkImpl(n.X, funcNode)
 			this.print(" + 1")
 		case token.DEC:
 			this.print(" = ")
-			this.walkImpl(n.X)
+			this.walkImpl(n.X, funcNode)
 			this.print(" - 1")
 		default:
 			panic(fmt.Errorf("unexpected token: %s", n.Tok))
@@ -475,19 +507,19 @@ func (this *Walker) walkImpl(node ast.Node) {
 		if n.Tok == token.DEFINE {
 			this.print("local ")
 		}
-		this.walkExprList(n.Lhs)
+		this.walkExprList(n.Lhs, funcNode)
 		this.print(" = ")
-		this.walkExprList(n.Rhs)
+		this.walkExprList(n.Rhs, funcNode)
 
 	case *ast.GoStmt:
-		this.walkImpl(n.Call)
+		this.walkImpl(n.Call, funcNode)
 
 	case *ast.DeferStmt:
-		this.walkImpl(n.Call)
+		this.walkImpl(n.Call, funcNode)
 
 	case *ast.ReturnStmt:
 		this.print("return ")
-		this.walkExprList(n.Results)
+		this.walkExprList(n.Results, funcNode)
 
 	case *ast.BranchStmt:
 		if n.Label == nil {
@@ -496,6 +528,8 @@ func (this *Walker) walkImpl(node ast.Node) {
 				this.print("break")
 			case token.CONTINUE:
 				this.printf("goto %s", this.ContinueLabels[n])
+			case token.GOTO:
+				this.printError(errors.New("missing label"), node)
 			}
 		} else {
 			switch n.Tok {
@@ -503,23 +537,25 @@ func (this *Walker) walkImpl(node ast.Node) {
 				this.printf("goto %s_break", n.Label)
 			case token.CONTINUE:
 				this.printf("goto %s_continue", n.Label)
+			case token.GOTO:
+				this.printf("goto %s", n.Label)
 			}
 		}
 
 	case *ast.BlockStmt:
 		this.indent++
-		this.walkStmtList(n.List, true)
+		this.walkStmtList(n.List, true, funcNode)
 		this.indent--
 
 	case *ast.IfStmt:
 		if n.Init != nil {
-			this.walkImpl(n.Init)
+			this.walkImpl(n.Init, funcNode)
 		}
 		this.print("if ")
-		this.walkImpl(n.Cond)
+		this.walkImpl(n.Cond, funcNode)
 
 		this.println(" then")
-		this.walkImpl(n.Body)
+		this.walkImpl(n.Body, funcNode)
 		var elif ast.Node
 		if n.Else != nil {
 			if nn, ok := n.Else.(*ast.IfStmt); ok {
@@ -529,7 +565,7 @@ func (this *Walker) walkImpl(node ast.Node) {
 			} else {
 				this.println("else")
 			}
-			this.walkImpl(n.Else)
+			this.walkImpl(n.Else, funcNode)
 		}
 		if _, ok := this.ElseIfs[n]; !ok {
 			this.print("end")
@@ -539,56 +575,56 @@ func (this *Walker) walkImpl(node ast.Node) {
 		}
 
 	case *ast.CaseClause:
-		this.walkExprList(n.List)
-		this.walkStmtList(n.Body, false)
+		this.walkExprList(n.List, funcNode)
+		this.walkStmtList(n.Body, false, funcNode)
 
 	case *ast.SwitchStmt:
 		if n.Init != nil {
-			this.walkImpl(n.Init)
+			this.walkImpl(n.Init, funcNode)
 		}
 		if n.Tag != nil {
-			this.walkImpl(n.Tag)
+			this.walkImpl(n.Tag, funcNode)
 		}
-		this.walkImpl(n.Body)
+		this.walkImpl(n.Body, funcNode)
 
 	case *ast.TypeSwitchStmt:
 		if n.Init != nil {
-			this.walkImpl(n.Init)
+			this.walkImpl(n.Init, funcNode)
 		}
-		this.walkImpl(n.Assign)
-		this.walkImpl(n.Body)
+		this.walkImpl(n.Assign, funcNode)
+		this.walkImpl(n.Body, funcNode)
 
 	case *ast.CommClause:
 		if n.Comm != nil {
-			this.walkImpl(n.Comm)
+			this.walkImpl(n.Comm, funcNode)
 		}
-		this.walkStmtList(n.Body, false)
+		this.walkStmtList(n.Body, false, funcNode)
 
 	case *ast.SelectStmt:
-		this.walkImpl(n.Body)
+		this.walkImpl(n.Body, funcNode)
 
 	case *ast.ForStmt:
 		if n.Init != nil {
 			this.println("do")
 			this.indent++
-			this.walkImpl(n.Init)
+			this.walkImpl(n.Init, funcNode)
 			this.println()
 		}
 		if n.Cond != nil {
 			this.print("while ")
-			this.walkImpl(n.Cond)
+			this.walkImpl(n.Cond, funcNode)
 			this.println(" do")
 		} else {
 			this.println("while true do")
 		}
-		this.walkImpl(n.Body)
+		this.walkImpl(n.Body, funcNode)
 
 		if label, ok := this.ContinueLabels[n]; ok {
 			this.printf("::%s::\n", label)
 		}
 		if n.Post != nil {
 			this.indent++
-			this.walkImpl(n.Post)
+			this.walkImpl(n.Post, funcNode)
 			this.indent--
 			this.println()
 		}
@@ -610,20 +646,20 @@ func (this *Walker) walkImpl(node ast.Node) {
 	case *ast.RangeStmt:
 		this.print("for ")
 		if n.Key != nil {
-			this.walkImpl(n.Key)
+			this.walkImpl(n.Key, funcNode)
 			this.print(", ")
 		} else {
 			this.print("_, ")
 		}
 		if n.Value != nil {
-			this.walkImpl(n.Value)
+			this.walkImpl(n.Value, funcNode)
 		}
 
 		this.print(" in pairs(")
-		this.walkImpl(n.X)
+		this.walkImpl(n.X, funcNode)
 		this.println(") do")
 
-		this.walkImpl(n.Body)
+		this.walkImpl(n.Body, funcNode)
 
 		if label, ok := this.ContinueLabels[n]; ok {
 			this.printf("::%s::\n", label)
@@ -640,37 +676,37 @@ func (this *Walker) walkImpl(node ast.Node) {
 	// Declarations
 	case *ast.ImportSpec:
 		if n.Doc != nil {
-			this.walkImpl(n.Doc)
+			this.walkImpl(n.Doc, funcNode)
 		}
 		if n.Name != nil {
-			this.walkImpl(n.Name)
+			this.walkImpl(n.Name, funcNode)
 		}
-		this.walkImpl(n.Path)
+		this.walkImpl(n.Path, funcNode)
 		if n.Comment != nil {
-			this.walkImpl(n.Comment)
+			this.walkImpl(n.Comment, funcNode)
 		}
 
 	case *ast.ValueSpec:
 		if n.Doc != nil {
-			this.walkImpl(n.Doc)
+			this.walkImpl(n.Doc, funcNode)
 		}
-		this.walkIdentList(n.Names)
+		this.walkIdentList(n.Names, funcNode)
 		if n.Type != nil {
-			this.walkImpl(n.Type)
+			this.walkImpl(n.Type, funcNode)
 		}
-		this.walkExprList(n.Values)
+		this.walkExprList(n.Values, funcNode)
 		if n.Comment != nil {
-			this.walkImpl(n.Comment)
+			this.walkImpl(n.Comment, funcNode)
 		}
 
 	case *ast.TypeSpec:
 		if n.Doc != nil {
-			this.walkImpl(n.Doc)
+			this.walkImpl(n.Doc, funcNode)
 		}
-		this.walkImpl(n.Name)
-		this.walkImpl(n.Type)
+		this.walkImpl(n.Name, funcNode)
+		this.walkImpl(n.Type, funcNode)
 		if n.Comment != nil {
-			this.walkImpl(n.Comment)
+			this.walkImpl(n.Comment, funcNode)
 		}
 
 	case *ast.BadDecl:
@@ -678,10 +714,10 @@ func (this *Walker) walkImpl(node ast.Node) {
 
 	case *ast.GenDecl:
 		if n.Doc != nil {
-			this.walkImpl(n.Doc)
+			this.walkImpl(n.Doc, funcNode)
 		}
 		for _, s := range n.Specs {
-			this.walkImpl(s)
+			this.walkImpl(s, funcNode)
 		}
 
 	case *ast.FuncDecl:
@@ -691,10 +727,10 @@ func (this *Walker) walkImpl(node ast.Node) {
 
 		this.print()
 		if n.Doc != nil {
-			this.walkImpl(n.Doc)
+			this.walkImpl(n.Doc, n)
 		}
 		if n.Recv != nil {
-			this.walkImpl(n.Recv)
+			this.walkImpl(n.Recv, n)
 		}
 
 		first := n.Name.Name[0]
@@ -702,28 +738,28 @@ func (this *Walker) walkImpl(node ast.Node) {
 			this.print("local ")
 		}
 
-		this.walkImpl(n.Name)
+		this.walkImpl(n.Name, n)
 		this.print(" = function(")
 
-		this.walkImpl(n.Type)
+		this.walkImpl(n.Type, n)
 		this.println(")")
 
 		if n.Body != nil {
-			this.walkImpl(n.Body)
+			this.walkImpl(n.Body, n)
 		}
 		this.println("end")
 
 	// Files and packages
 	case *ast.File:
 		if n.Doc != nil {
-			this.walkImpl(n.Doc)
+			this.walkImpl(n.Doc, funcNode)
 		}
 
 		this.print("-- package: ")
-		this.walkImpl(n.Name)
+		this.walkImpl(n.Name, funcNode)
 		this.println()
 
-		this.walkDeclList(n.Decls)
+		this.walkDeclList(n.Decls, funcNode)
 		// don't walk n.Comments - they have been
 		// visited already through the individual
 		// nodes
@@ -735,7 +771,7 @@ func (this *Walker) walkImpl(node ast.Node) {
 
 	case *ast.Package:
 		for _, f := range n.Files {
-			this.walkImpl(f)
+			this.walkImpl(f, funcNode)
 		}
 
 	default:

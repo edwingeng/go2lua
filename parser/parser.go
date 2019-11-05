@@ -125,7 +125,7 @@ func (this *Parser) Output(dir string) {
 	wg.Wait()
 }
 
-func (this *Parser) PrintDetails(debugMode bool) {
+func (this *Parser) PrintDetails(astTree, luaCode bool) {
 	commonPrefix := this.commonPrefix()
 	for _, pkg := range this.pkgs {
 		for _, syn := range pkg.Syntax {
@@ -134,7 +134,7 @@ func (this *Parser) PrintDetails(debugMode bool) {
 				continue
 			}
 
-			if debugMode {
+			if astTree {
 				fmt.Println("=======###", f1[len(commonPrefix):])
 				fmt.Println()
 				var buf bytes.Buffer
@@ -148,12 +148,14 @@ func (this *Parser) PrintDetails(debugMode bool) {
 				fmt.Println(str)
 			}
 
-			w := walker.NewWalker(pkg.Fset, syn)
-			w.Walk()
+			if luaCode {
+				w := walker.NewWalker(pkg.Fset, syn)
+				w.Walk()
 
-			fmt.Println("==========", f1[len(commonPrefix):])
-			fmt.Println()
-			fmt.Println(w.BufferString())
+				fmt.Println("==========", f1[len(commonPrefix):])
+				fmt.Println()
+				fmt.Println(w.BufferString())
+			}
 		}
 	}
 }

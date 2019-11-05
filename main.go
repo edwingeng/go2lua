@@ -36,7 +36,10 @@ func main() {
 
 	if *outputDir != "" {
 		p.Output(*outputDir)
+		if *astTree {
+			p.PrintDetails(true, false)
+		}
 	} else {
-		p.PrintDetails(*astTree)
+		p.PrintDetails(*astTree, true)
 	}
 }

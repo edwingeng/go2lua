@@ -31,7 +31,6 @@ local rangeMap3 = function()
     m["a"] = 100
     m["b"] = 200
 
-::pos1::
     for k, v in pairs(m) do
         print(k, v)
         while true do
@@ -46,7 +45,6 @@ local rangeMap4 = function()
     m["a"] = 100
     m["b"] = 200
 
-::pos1::
     for k, v in pairs(m) do
         print(k, v)
         while true do

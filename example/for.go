@@ -61,3 +61,17 @@ pos1:
 		}
 	}
 }
+
+func forLoop9(n int) {
+	if n > 0 {
+		goto pos1
+	}
+	println(100)
+
+pos1:
+	for i := 0; i < 3; i++ {
+		for {
+			continue pos1
+		}
+	}
+}

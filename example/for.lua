@@ -57,7 +57,6 @@ local forLoop6 = function()
 end
 
 local forLoop7 = function()
-::pos1::
     do
         local i = 0
         while i < 3 do
@@ -71,6 +70,24 @@ local forLoop7 = function()
 end
 
 local forLoop8 = function()
+    do
+        local i = 0
+        while i < 3 do
+            while true do
+                goto pos1_continue
+            end
+        ::pos1_continue::
+            i = i + 1
+        end
+    end
+end
+
+local forLoop9 = function(n)
+    if n > 0 then
+        goto pos1
+    end
+    print(100)
+
 ::pos1::
     do
         local i = 0

@@ -78,15 +78,13 @@ func (this *Parser) Output(dir string) {
 				continue
 			}
 
-			w := walker.NewWalker(pkg.Fset)
-			w.Initialize(syn)
-			w.Walk(syn)
-			w.Trim()
+			w := walker.NewWalker(pkg.Fset, syn)
+			w.Walk()
 
 			f2 := filepath.Base(f1)
 			f3 := strings.TrimSuffix(f2, ".go") + ".lua"
 			f4 := filepath.Join(dir, f3)
-			if err := ioutil.WriteFile(f4, w.Bytes(), 0644); err != nil {
+			if err := ioutil.WriteFile(f4, w.BufferBytes(), 0644); err != nil {
 				panic(err)
 			}
 		}
@@ -116,14 +114,12 @@ func (this *Parser) PrintDetails(debugMode bool) {
 				fmt.Println(str)
 			}
 
-			w := walker.NewWalker(pkg.Fset)
-			w.Initialize(syn)
-			w.Walk(syn)
-			w.Trim()
+			w := walker.NewWalker(pkg.Fset, syn)
+			w.Walk()
 
 			fmt.Println("==========", f1[len(commonPrefix):])
 			fmt.Println()
-			fmt.Println(w.String())
+			fmt.Println(w.BufferString())
 		}
 	}
 }

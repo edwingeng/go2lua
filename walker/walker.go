@@ -28,22 +28,24 @@ var (
 
 type Walker struct {
 	bytes.Buffer
-	fset *token.FileSet
+	Fset *token.FileSet
 
 	nextNums map[string]int
 	indent   int
 
-	FuncInit   bool
-	Elseifs    map[ast.Node]struct{}
-	LoopLabels map[ast.Node]string
+	FuncInit       bool
+	ElseIfs        map[ast.Node]struct{}
+	BreakLabels    map[ast.Node]string
+	ContinueLabels map[ast.Node]string
 }
 
 func NewWalker(fset *token.FileSet) *Walker {
 	w := &Walker{
-		fset:       fset,
-		nextNums:   make(map[string]int),
-		Elseifs:    make(map[ast.Node]struct{}),
-		LoopLabels: make(map[ast.Node]string),
+		Fset:           fset,
+		nextNums:       make(map[string]int),
+		ElseIfs:        make(map[ast.Node]struct{}),
+		BreakLabels:    make(map[ast.Node]string),
+		ContinueLabels: make(map[ast.Node]string),
 	}
 	return w
 }
@@ -75,7 +77,7 @@ func (this *Walker) Printf(format string, a ...interface{}) {
 func (this *Walker) printError(err error, node ast.Node) {
 	var buf bytes.Buffer
 	_, _ = fmt.Fprintln(&buf, err.Error()+".")
-	if err := ast.Fprint(&buf, this.fset, node, nil); err != nil {
+	if err := ast.Fprint(&buf, this.Fset, node, nil); err != nil {
 		panic(err)
 	}
 	_, _ = os.Stderr.Write(buf.Bytes())
@@ -113,30 +115,73 @@ func (this *Walker) Initialize(node ast.Node) {
 		}
 		stack = append(stack, node)
 		switch n := node.(type) {
-		case *ast.ForStmt:
-		case *ast.RangeStmt:
 		case *ast.BranchStmt:
-			switch n.Tok {
-			case token.CONTINUE:
-				if n.Label == nil {
-					var loopNode ast.Node
-					for i := len(stack) - 1; i >= 0 && loopNode == nil; i-- {
-						switch sn := stack[i].(type) {
-						case *ast.ForStmt, *ast.RangeStmt:
-							loopNode = sn
-							if _, ok := this.LoopLabels[sn]; !ok {
-								this.LoopLabels[sn] = this.makeUniqueName("loop")
+			switch {
+			case n.Label == nil && n.Tok == token.CONTINUE:
+				var loopNode ast.Node
+				var loopNodeLabel string
+				for i := len(stack) - 1; i >= 0 && loopNode == nil; i-- {
+					switch sn := stack[i].(type) {
+					case *ast.ForStmt, *ast.RangeStmt:
+						loopNode = sn
+						if stmt, ok := stack[i-1].(*ast.LabeledStmt); ok {
+							loopNodeLabel = stmt.Label.Name
+						}
+					}
+				}
+				if loopNode == nil {
+					this.printError(fmt.Errorf("unexpected token: %s", n.Tok), node)
+					break
+				}
+				if _, ok := this.ContinueLabels[loopNode]; !ok {
+					if loopNodeLabel == "" {
+						this.ContinueLabels[loopNode] = this.makeUniqueName("continue")
+					} else {
+						this.ContinueLabels[loopNode] = loopNodeLabel
+					}
+				}
+				loopNodeLabel = this.ContinueLabels[loopNode]
+				this.ContinueLabels[node] = loopNodeLabel
+
+			case n.Label != nil && (n.Tok == token.BREAK || n.Tok == token.CONTINUE):
+				var loopNode ast.Node
+				var err error
+				for i := len(stack) - 1; i >= 0 && loopNode == nil; i-- {
+					switch sn := stack[i].(type) {
+					case *ast.LabeledStmt:
+						if sn.Label.Name == n.Label.Name {
+							switch sn.Stmt.(type) {
+							case *ast.ForStmt, *ast.RangeStmt:
+								loopNode = sn.Stmt
+							default:
+								err = fmt.Errorf("%q is NOT a 'for' label", sn.Label.Name)
 							}
 						}
 					}
-					if loopNode == nil {
-						this.printError(fmt.Errorf("unexpected token: %s", n.Tok), node)
-					} else {
-						this.LoopLabels[node] = this.LoopLabels[loopNode]
+				}
+				if err != nil {
+					this.printError(err, n)
+					break
+				}
+				if loopNode == nil {
+					this.printError(fmt.Errorf("unexpected token: %s", n.Tok), node)
+					break
+				}
+				switch n.Tok {
+				case token.BREAK:
+					if _, ok := this.BreakLabels[loopNode]; !ok {
+						this.BreakLabels[loopNode] = n.Label.Name + "_break"
 					}
+				case token.CONTINUE:
+					if _, ok := this.ContinueLabels[loopNode]; !ok {
+						this.ContinueLabels[loopNode] = n.Label.Name + "_continue"
+					}
+				default:
+					panic("IMPOSSIBLE")
 				}
 			}
 		}
+
 		return true
 	})
 }
@@ -347,7 +392,9 @@ func (this *Walker) Walk(node ast.Node) {
 		// nothing to do
 
 	case *ast.LabeledStmt:
-		this.Walk(n.Label)
+		this.indent--
+		this.Printf("::%s::\n", n.Label.Name)
+		this.indent++
 		this.Walk(n.Stmt)
 
 	case *ast.ExprStmt:
@@ -391,14 +438,19 @@ func (this *Walker) Walk(node ast.Node) {
 		this.walkExprList(n.Results)
 
 	case *ast.BranchStmt:
-		if n.Label != nil {
-			this.Walk(n.Label)
-		} else {
+		if n.Label == nil {
 			switch n.Tok {
 			case token.BREAK:
 				this.Print("break")
 			case token.CONTINUE:
-				this.Printf("goto %s", this.LoopLabels[n])
+				this.Printf("goto %s", this.ContinueLabels[n])
+			}
+		} else {
+			switch n.Tok {
+			case token.BREAK:
+				this.Printf("goto %s_break", n.Label)
+			case token.CONTINUE:
+				this.Printf("goto %s_continue", n.Label)
 			}
 		}
 
@@ -420,18 +472,18 @@ func (this *Walker) Walk(node ast.Node) {
 		if n.Else != nil {
 			if nn, ok := n.Else.(*ast.IfStmt); ok {
 				this.Print("else")
-				this.Elseifs[nn] = struct{}{}
+				this.ElseIfs[nn] = struct{}{}
 				elif = nn
 			} else {
 				this.Println("else")
 			}
 			this.Walk(n.Else)
 		}
-		if _, ok := this.Elseifs[n]; !ok {
+		if _, ok := this.ElseIfs[n]; !ok {
 			this.Print("end")
 		}
 		if elif != nil {
-			delete(this.Elseifs, elif)
+			delete(this.ElseIfs, elif)
 		}
 
 	case *ast.CaseClause:
@@ -479,7 +531,7 @@ func (this *Walker) Walk(node ast.Node) {
 		}
 		this.Walk(n.Body)
 
-		if label, ok := this.LoopLabels[n]; ok {
+		if label, ok := this.ContinueLabels[n]; ok {
 			this.Printf("::%s::\n", label)
 		}
 		if n.Post != nil {
@@ -493,7 +545,15 @@ func (this *Walker) Walk(node ast.Node) {
 			this.Println("end")
 			this.indent--
 		}
-		this.Print("end")
+
+		if label, ok := this.BreakLabels[n]; ok {
+			this.Println("end")
+			this.indent--
+			this.Printf("::%s::", label)
+			this.indent++
+		} else {
+			this.Print("end")
+		}
 
 	case *ast.RangeStmt:
 		this.Print("for ")
@@ -512,7 +572,13 @@ func (this *Walker) Walk(node ast.Node) {
 		this.Println(") do")
 
 		this.Walk(n.Body)
+
 		this.Print("end")
+		if label, ok := this.BreakLabels[n]; ok {
+			this.indent--
+			this.Printf("::%s::\n", label)
+			this.indent++
+		}
 
 	// Declarations
 	case *ast.ImportSpec:

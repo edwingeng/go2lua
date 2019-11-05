@@ -44,6 +44,24 @@ func forLoop6() {
 	}
 }
 
+func forLoop7() {
+pos1:
+	for i := 0; i < 3; i++ {
+		for {
+			break pos1
+		}
+	}
+}
+
+func forLoop8() {
+pos1:
+	for i := 0; i < 3; i++ {
+		for {
+			continue pos1
+		}
+	}
+}
+
 func forRangeMap() {
 	m := make(map[string]int)
 	m["a"] = 100

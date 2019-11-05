@@ -47,10 +47,38 @@ local forLoop6 = function()
         local i = 0
         while i < 3 do
             if i >= 1 then
-                goto xxx_loop_1
+                goto xxx_continue_1
             end
             print(i)
-        ::xxx_loop_1::
+        ::xxx_continue_1::
+            i = i + 1
+        end
+    end
+end
+
+local forLoop7 = function()
+::pos1::
+    do
+        local i = 0
+        while i < 3 do
+            while true do
+                goto pos1_break
+            end
+            i = i + 1
+        end
+    end
+::pos1_break::
+end
+
+local forLoop8 = function()
+::pos1::
+    do
+        local i = 0
+        while i < 3 do
+            while true do
+                goto pos1_continue
+            end
+        ::pos1_continue::
             i = i + 1
         end
     end

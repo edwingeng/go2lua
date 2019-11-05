@@ -580,12 +580,65 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 	case *ast.SwitchStmt:
 		if n.Init != nil {
+			this.println("do")
+			this.indent++
 			this.walkImpl(n.Init, funcNode)
+			this.println()
 		}
+
 		if n.Tag != nil {
+			this.println("do")
+			this.indent++
+			this.printf("local switchTag = ")
 			this.walkImpl(n.Tag, funcNode)
+			this.println()
+
+			if n.Body != nil {
+				var def *ast.CaseClause
+				var c int
+				for _, stmt := range n.Body.List {
+					caseClause, ok := stmt.(*ast.CaseClause)
+					if !ok {
+						panic("IMPOSSIBLE")
+					}
+					if caseClause.List == nil {
+						def = caseClause
+						continue
+					}
+
+					if c++; c == 1 {
+						this.printf("if ")
+					} else {
+						this.printf("elseif ")
+					}
+
+					this.walkCaseClause(caseClause, funcNode)
+				}
+
+				if def != nil {
+					if c > 0 {
+						this.println("else")
+					} else {
+						this.println("do")
+					}
+					this.walkCaseClause(def, funcNode)
+				}
+
+				if len(n.Body.List) > 0 {
+					this.println("end")
+				}
+			}
+
+			this.indent--
+			this.print("end")
+		} else {
+			this.walkImpl(n.Body, funcNode)
 		}
-		this.walkImpl(n.Body, funcNode)
+
+		if n.Init != nil {
+			this.indent--
+			this.println("end")
+		}
 
 	case *ast.TypeSwitchStmt:
 		if n.Init != nil {
@@ -786,6 +839,32 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 	default:
 		panic(fmt.Sprintf("ast.walkImpl: unexpected node type %T", n))
 	}
+}
+
+func (this *Walker) walkCaseClause(node *ast.CaseClause, funcNode ast.Node) {
+	this.indent++
+	for i, expr := range node.List {
+		if i > 0 {
+			this.printf("or ")
+		}
+		switch e := expr.(type) {
+		case *ast.BasicLit:
+			this.printf("switchTag == %s ", e.Value)
+		case *ast.Ident:
+			this.printf("switchTag == %s ", e.Name)
+		default:
+			this.print("(switchTag == ")
+			this.walkImpl(e, funcNode)
+			this.print("%s) ")
+		}
+	}
+
+	if node.List != nil {
+		this.println("then ")
+	}
+	this.walkStmtList(node.Body, false, funcNode)
+	this.println()
+	this.indent--
 }
 
 func (this *Walker) trim() {

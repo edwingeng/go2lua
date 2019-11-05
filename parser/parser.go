@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/token"
 	"io/ioutil"
 	"math"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/edwingeng/go2lua/walker"
 	"golang.org/x/tools/go/packages"
@@ -71,24 +73,56 @@ func (this *Parser) Parse() error {
 }
 
 func (this *Parser) Output(dir string) {
-	for _, pkg := range this.pkgs {
-		for _, syn := range pkg.Syntax {
-			f1 := pkg.Fset.Position(syn.Package).Filename
-			if this.fileFilter != nil && !this.fileFilter(f1) {
-				continue
-			}
+	type item struct {
+		fset *token.FileSet
+		file *ast.File
+	}
 
-			w := walker.NewWalker(pkg.Fset, syn)
-			w.Walk()
-
-			f2 := filepath.Base(f1)
-			f3 := strings.TrimSuffix(f2, ".go") + ".lua"
-			f4 := filepath.Join(dir, f3)
-			if err := ioutil.WriteFile(f4, w.BufferBytes(), 0644); err != nil {
-				panic(err)
+	ch := make(chan item)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer func() {
+			close(ch)
+			wg.Done()
+		}()
+		for _, pkg := range this.pkgs {
+			for _, syn := range pkg.Syntax {
+				ch <- item{
+					fset: pkg.Fset,
+					file: syn,
+				}
 			}
 		}
+	}()
+	for i := 0; i < 16; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				item, ok := <-ch
+				if !ok {
+					break
+				}
+
+				f1 := item.fset.Position(item.file.Package).Filename
+				if this.fileFilter != nil && !this.fileFilter(f1) {
+					continue
+				}
+
+				w := walker.NewWalker(item.fset, item.file)
+				w.Walk()
+
+				f2 := filepath.Base(f1)
+				f3 := strings.TrimSuffix(f2, ".go") + ".lua"
+				f4 := filepath.Join(dir, f3)
+				if err := ioutil.WriteFile(f4, w.BufferBytes(), 0644); err != nil {
+					panic(err)
+				}
+			}
+		}()
 	}
+	wg.Wait()
 }
 
 func (this *Parser) PrintDetails(debugMode bool) {

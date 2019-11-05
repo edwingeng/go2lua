@@ -853,9 +853,9 @@ func (this *Walker) walkCaseClause(node *ast.CaseClause, funcNode ast.Node) {
 		case *ast.Ident:
 			this.printf("switchTag == %s ", e.Name)
 		default:
-			this.print("(switchTag == ")
+			this.print("switchTag == (")
 			this.walkImpl(e, funcNode)
-			this.print("%s) ")
+			this.print(") ")
 		}
 	}
 

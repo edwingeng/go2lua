@@ -1,6 +1,6 @@
 package example
 
-func Ifs(n int) {
+func If(n int) {
 	if n == 0 {
 		println("a1:", 0)
 	}

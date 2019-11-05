@@ -1,6 +1,6 @@
 -- package: example
 
-Ifs = function(n)
+If = function(n)
     if n == 0 then
         print("a1:", 0)
     end

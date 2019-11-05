@@ -617,7 +617,16 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		} else {
 			this.println("while true do")
 		}
+
+		if n.Post != nil && n.Body != nil && len(n.Body.List) > 0 {
+			this.indent++
+			this.println("do")
+		}
 		this.walkImpl(n.Body, funcNode)
+		if n.Post != nil && n.Body != nil && len(n.Body.List) > 0 {
+			this.println("end")
+			this.indent--
+		}
 
 		if label, ok := this.ContinueLabels[n]; ok {
 			this.printf("::%s::\n", label)

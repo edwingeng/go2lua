@@ -35,8 +35,10 @@ end
 local forLoop5 = function()
     local i = 0
     while true do
-        if i >= 1 then
-            break
+        do
+            if i >= 1 then
+                break
+            end
         end
         i = i + 1
     end
@@ -46,10 +48,12 @@ local forLoop6 = function()
     do
         local i = 0
         while i < 3 do
-            if i >= 1 then
-                goto xxx_continue_1
+            do
+                if i >= 1 then
+                    goto xxx_continue_1
+                end
+                print(i)
             end
-            print(i)
         ::xxx_continue_1::
             i = i + 1
         end
@@ -60,8 +64,10 @@ local forLoop7 = function()
     do
         local i = 0
         while i < 3 do
-            while true do
-                goto pos1_break
+            do
+                while true do
+                    goto pos1_break
+                end
             end
             i = i + 1
         end
@@ -73,8 +79,10 @@ local forLoop8 = function()
     do
         local i = 0
         while i < 3 do
-            while true do
-                goto pos1_continue
+            do
+                while true do
+                    goto pos1_continue
+                end
             end
         ::pos1_continue::
             i = i + 1
@@ -92,8 +100,10 @@ local forLoop9 = function(n)
     do
         local i = 0
         while i < 3 do
-            while true do
-                goto pos1_continue
+            do
+                while true do
+                    goto pos1_continue
+                end
             end
         ::pos1_continue::
             i = i + 1

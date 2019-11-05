@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/edwingeng/go2lua/parser"
 )
@@ -11,6 +12,7 @@ import (
 func main() {
 	astTree := flag.Bool("astTree", false, "print ast trees for debug purpose")
 	outputDir := flag.String("outputDir", "", "the output directory")
+	filter := flag.String("filter", "", "file filter, for debug purpose")
 	flag.Parse()
 
 	if *outputDir != "" {
@@ -22,6 +24,12 @@ func main() {
 	}
 
 	fileFilter := func(file string) bool {
+		if *filter != "" {
+			matched, err := filepath.Match(*filter, filepath.Base(file))
+			if err != nil || !matched {
+				return false
+			}
+		}
 		return true
 	}
 

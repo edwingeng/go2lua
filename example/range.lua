@@ -30,6 +30,7 @@ local rangeMap3 = function()
     local m = {}
     m["a"] = 100
     m["b"] = 200
+
 ::pos1::
     for k, v in pairs(m) do
         print(k, v)
@@ -44,6 +45,7 @@ local rangeMap4 = function()
     local m = {}
     m["a"] = 100
     m["b"] = 200
+
 ::pos1::
     for k, v in pairs(m) do
         print(k, v)

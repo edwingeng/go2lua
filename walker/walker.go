@@ -62,7 +62,7 @@ func (this *Walker) printIndent() {
 	if n := len(bts); n > 0 && bts[n-1] == '\n' {
 		var c int
 		pos := this.Fset.Position(this.current.Pos())
-		for i := pos.Offset - 1; i >= 0; {
+		for i := pos.Offset; i >= 0; {
 			r, size := utf8.DecodeLastRune(this.fileData[:i])
 			i -= size
 			if r == '\n' {
@@ -74,7 +74,16 @@ func (this *Walker) printIndent() {
 			}
 		}
 		if c >= 2 {
-			this.buffer.WriteByte('\n')
+			for i := n - 1; i >= 0; {
+				r, size := utf8.DecodeLastRune(bts[:i])
+				i -= size
+				if r == '\n' {
+					break
+				} else if !unicode.IsSpace(r) {
+					this.buffer.WriteByte('\n')
+					break
+				}
+			}
 		}
 		for i := 0; i < this.indent; i++ {
 			this.buffer.Write(indentBytes)
@@ -256,10 +265,12 @@ func (this *Walker) walkExprList(list []ast.Expr) {
 	}
 }
 
-func (this *Walker) walkStmtList(list []ast.Stmt, sep string) {
+func (this *Walker) walkStmtList(list []ast.Stmt, newline bool) {
 	for _, x := range list {
 		this.walkImpl(x)
-		this.print(sep)
+		if newline {
+			this.println()
+		}
 	}
 }
 
@@ -497,7 +508,7 @@ func (this *Walker) walkImpl(node ast.Node) {
 
 	case *ast.BlockStmt:
 		this.indent++
-		this.walkStmtList(n.List, "\n")
+		this.walkStmtList(n.List, true)
 		this.indent--
 
 	case *ast.IfStmt:
@@ -529,7 +540,7 @@ func (this *Walker) walkImpl(node ast.Node) {
 
 	case *ast.CaseClause:
 		this.walkExprList(n.List)
-		this.walkStmtList(n.Body, "")
+		this.walkStmtList(n.Body, false)
 
 	case *ast.SwitchStmt:
 		if n.Init != nil {
@@ -551,7 +562,7 @@ func (this *Walker) walkImpl(node ast.Node) {
 		if n.Comm != nil {
 			this.walkImpl(n.Comm)
 		}
-		this.walkStmtList(n.Body, "")
+		this.walkStmtList(n.Body, false)
 
 	case *ast.SelectStmt:
 		this.walkImpl(n.Body)
@@ -678,6 +689,7 @@ func (this *Walker) walkImpl(node ast.Node) {
 			this.FuncInit = true
 		}
 
+		this.print()
 		if n.Doc != nil {
 			this.walkImpl(n.Doc)
 		}
@@ -700,7 +712,6 @@ func (this *Walker) walkImpl(node ast.Node) {
 			this.walkImpl(n.Body)
 		}
 		this.println("end")
-		this.println()
 
 	// Files and packages
 	case *ast.File:
@@ -711,7 +722,6 @@ func (this *Walker) walkImpl(node ast.Node) {
 		this.print("-- package: ")
 		this.walkImpl(n.Name)
 		this.println()
-		this.println()
 
 		this.walkDeclList(n.Decls)
 		// don't walk n.Comments - they have been
@@ -719,6 +729,7 @@ func (this *Walker) walkImpl(node ast.Node) {
 		// nodes
 
 		if this.FuncInit {
+			this.println()
 			this.println("return init")
 		}
 

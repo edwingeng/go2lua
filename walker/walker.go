@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"io/ioutil"
 	"os"
+	"unicode"
+	"unicode/utf8"
 )
 
 var (
@@ -30,6 +33,8 @@ type Walker struct {
 	Fset *token.FileSet
 	root ast.Node
 
+	fileData []byte
+	current  ast.Node
 	nextNums map[string]int
 	indent   int
 
@@ -55,6 +60,22 @@ func NewWalker(fset *token.FileSet, node ast.Node) *Walker {
 func (this *Walker) printIndent() {
 	bts := this.buffer.Bytes()
 	if n := len(bts); n > 0 && bts[n-1] == '\n' {
+		var c int
+		pos := this.Fset.Position(this.current.Pos())
+		for i := pos.Offset - 1; i >= 0; {
+			r, size := utf8.DecodeLastRune(this.fileData[:i])
+			i -= size
+			if r == '\n' {
+				if c++; c >= 2 {
+					break
+				}
+			} else if !unicode.IsSpace(r) {
+				break
+			}
+		}
+		if c >= 2 {
+			this.buffer.WriteByte('\n')
+		}
 		for i := 0; i < this.indent; i++ {
 			this.buffer.Write(indentBytes)
 		}
@@ -186,6 +207,13 @@ func (this *Walker) initialize() {
 
 		return true
 	})
+
+	var err error
+	file := this.Fset.File(this.root.Pos()).Name()
+	this.fileData, err = ioutil.ReadFile(file)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (this *Walker) forStmt_Continues(node *ast.ForStmt) (found, immediate bool, labels []string) {
@@ -252,6 +280,7 @@ func (this *Walker) Walk() {
 }
 
 func (this *Walker) walkImpl(node ast.Node) {
+	this.current = node
 	switch n := node.(type) {
 	// Comments and fields
 	case *ast.Comment:

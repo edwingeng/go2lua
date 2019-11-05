@@ -4,6 +4,7 @@ local rangeMap1 = function()
     local m = {}
     m["a"] = 100
     m["b"] = 200
+
     for k, v in pairs(m) do
         print(k, v)
     end
@@ -14,6 +15,7 @@ local rangeMap2 = function()
     m["a"] = 100
     m["b"] = 200
     m["c"] = 300
+
     for k, v in pairs(m) do
         if k == "b" then
             goto xxx_continue_1

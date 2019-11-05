@@ -4,11 +4,13 @@ If = function(n)
     if n == 0 then
         print("a1:", 0)
     end
+
     if n == 1 then
         print("b1:", 1)
     else
         print("b2:", n)
     end
+
     if n == 1 then
         print("c1:", 1)
     elseif n == 2 then
@@ -16,6 +18,7 @@ If = function(n)
     else
         print("c3:", n)
     end
+
     if n > 10 then
         if n > 100 then
             print("d1:", n)
@@ -29,6 +32,7 @@ If = function(n)
             print("d4:", n)
         end
     end
+
     if n > 10 then
         print("e1:", n)
     else

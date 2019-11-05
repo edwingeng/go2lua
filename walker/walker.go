@@ -573,11 +573,16 @@ func (this *Walker) Walk(node ast.Node) {
 
 		this.Walk(n.Body)
 
-		this.Print("end")
-		if label, ok := this.BreakLabels[n]; ok {
-			this.indent--
+		if label, ok := this.ContinueLabels[n]; ok {
 			this.Printf("::%s::\n", label)
+		}
+		if label, ok := this.BreakLabels[n]; ok {
+			this.Println("end")
+			this.indent--
+			this.Printf("::%s::", label)
 			this.indent++
+		} else {
+			this.Print("end")
 		}
 
 	// Declarations

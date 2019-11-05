@@ -62,12 +62,55 @@ pos1:
 	}
 }
 
-func forRangeMap() {
+func forRangeMap1() {
 	m := make(map[string]int)
 	m["a"] = 100
 	m["b"] = 200
 
 	for k, v := range m {
 		println(k, v)
+	}
+}
+
+func forRangeMap2() {
+	m := make(map[string]int)
+	m["a"] = 100
+	m["b"] = 200
+	m["c"] = 300
+
+	for k, v := range m {
+		if k == "b" {
+			continue
+		} else {
+			println(k, v)
+		}
+	}
+}
+
+func forRangeMap3() {
+	m := make(map[string]int)
+	m["a"] = 100
+	m["b"] = 200
+
+pos1:
+	for k, v := range m {
+		println(k, v)
+		for {
+			break pos1
+		}
+	}
+}
+
+func forRangeMap4() {
+	m := make(map[string]int)
+	m["a"] = 100
+	m["b"] = 200
+
+pos1:
+	for k, v := range m {
+		println(k, v)
+		for {
+			continue pos1
+		}
 	}
 }

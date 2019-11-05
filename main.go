@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/edwingeng/go2lua/parser"
 )
 
 func main() {
@@ -37,7 +35,7 @@ func main() {
 	for i := 0; i < flag.NArg(); i++ {
 		pkgPaths = append(pkgPaths, flag.Arg(i))
 	}
-	p := parser.NewParser(pkgPaths, parser.WithFileFilter(fileFilter))
+	p := NewParser(pkgPaths, WithFileFilter(fileFilter))
 	if err := p.Parse(); err != nil {
 		panic(err)
 	}
@@ -49,5 +47,9 @@ func main() {
 		}
 	} else {
 		p.PrintDetails(*astTree, true)
+	}
+
+	if TotalErrors > 0 {
+		os.Exit(1)
 	}
 }

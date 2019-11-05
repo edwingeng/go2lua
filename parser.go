@@ -1,4 +1,4 @@
-package parser
+package main
 
 import (
 	"bytes"
@@ -13,6 +13,10 @@ import (
 
 	"github.com/edwingeng/go2lua/walker"
 	"golang.org/x/tools/go/packages"
+)
+
+var (
+	TotalErrors int
 )
 
 type Parser struct {
@@ -112,6 +116,7 @@ func (this *Parser) Output(dir string) {
 
 				w := walker.NewWalker(item.fset, item.file)
 				w.Walk()
+				TotalErrors += w.NumErrors
 
 				f2 := filepath.Base(f1)
 				f3 := strings.TrimSuffix(f2, ".go") + ".lua"

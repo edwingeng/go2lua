@@ -44,6 +44,7 @@ type Walker struct {
 	indent   int
 
 	buffer         bytes.Buffer
+	NumErrors      int
 	FuncInit       bool
 	ElseIfs        map[ast.Node]struct{}
 	BreakLabels    map[ast.Node]string
@@ -120,6 +121,7 @@ func (this *Walker) printError(err error, node ast.Node) {
 		panic(err)
 	}
 	_, _ = os.Stderr.Write(buf.Bytes())
+	this.NumErrors++
 }
 
 func (this *Walker) makeUniqueName(key string) string {

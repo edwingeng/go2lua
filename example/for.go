@@ -89,3 +89,19 @@ func forLoop10() {
 		println(i)
 	}
 }
+
+func forLoop11() {
+outer:
+	for i := 0; i < 4; i++ {
+		switch i {
+		case 0:
+			continue
+		case 1:
+		case 2:
+			println("a", i)
+		default:
+			break outer
+		}
+		println("b", i)
+	}
+}

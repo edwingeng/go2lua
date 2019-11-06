@@ -267,7 +267,7 @@ func (this *Walker) initialize() {
 						funcNode := funcStack[len(funcStack)-1]
 						this.ContinueLabels[loopNode] = this.makeFuncScopeUniqueName(funcNode, "continue")
 					} else {
-						this.ContinueLabels[loopNode] = loopNodeLabel
+						this.ContinueLabels[loopNode] = loopNodeLabel + "_continue"
 					}
 				}
 				loopNodeLabel = this.ContinueLabels[loopNode]
@@ -345,24 +345,6 @@ func (this *Walker) initialize() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func (this *Walker) forStmt_Continues(node *ast.ForStmt) (found, immediate bool, labels []string) {
-	m := make(map[string]struct{})
-	ast.Inspect(node, func(node ast.Node) bool {
-		if n, ok := node.(*ast.BranchStmt); ok {
-			if n.Tok == token.CONTINUE {
-				found = true
-
-				m[n.Label.Name] = struct{}{}
-			}
-		}
-		return true
-	})
-	for k := range m {
-		labels = append(labels, k)
-	}
-	return
 }
 
 func (this *Walker) walkIdentList(list []*ast.Ident, funcNode ast.Node) {

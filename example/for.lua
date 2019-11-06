@@ -125,3 +125,26 @@ local forLoop10 = function()
         end
     end
 end
+
+local forLoop11 = function()
+    do
+        local i = 0
+        while i < 4 do
+            repeat
+                local switchTag = i
+                if switchTag == 0 then
+                    goto outer_continue
+                elseif switchTag == 1 then
+                elseif switchTag == 2 then
+                    print("a", i)
+                else
+                    goto outer_break
+                end
+            until true
+            print("b", i)
+        ::outer_continue::
+            i = i + 1
+        end
+    end
+::outer_break::
+end

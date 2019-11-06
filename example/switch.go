@@ -55,3 +55,28 @@ func switch4(n int) {
 		println("g", n)
 	}
 }
+
+func switch5(n int) {
+	switch {
+	case n == 1:
+		println("a", n)
+		fallthrough
+	case n == 2:
+		println("b", n)
+		fallthrough
+	case n == 3:
+		println("c", n)
+		break
+	case n == 4:
+		println("d", n)
+
+	case n == 5:
+		println("e", n)
+		fallthrough
+	default:
+		println("f", n)
+		fallthrough
+	case n == 6 || n == 7:
+		println("g", n)
+	}
+}

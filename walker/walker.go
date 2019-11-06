@@ -683,81 +683,80 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 		var includeFallthrough bool
 		var switchLabel string
+
+		this.println("repeat")
+		this.indent++
 		if n.Tag != nil {
-			this.println("repeat")
-			this.indent++
-			this.printf("local switchTag = ")
+			this.printf("local __switch = ")
 			this.walkImpl(n.Tag, funcNode)
 			this.println()
+		}
 
-			if n.Body != nil {
-				for _, stmt := range n.Body.List {
+		if n.Body != nil {
+			for _, stmt := range n.Body.List {
+				if _, ok := this.FallthroughCases[stmt]; ok {
+					includeFallthrough = true
+					break
+				}
+			}
+			if includeFallthrough {
+				switchLabel = this.makeFuncScopeUniqueName(funcNode, "switch")
+				this.println("local __fall = false")
+				for i, stmt := range n.Body.List {
 					if _, ok := this.FallthroughCases[stmt]; ok {
-						includeFallthrough = true
-						break
+						this.FallthroughCases[stmt] = fmt.Sprintf("%s_%d", switchLabel, i+1)
 					}
 				}
+			}
+
+			var def *ast.CaseClause
+			var c int
+			for _, stmt := range n.Body.List {
+				caseClause, ok := stmt.(*ast.CaseClause)
+				if !ok {
+					panic("IMPOSSIBLE")
+				}
+				if caseClause.List == nil {
+					def = caseClause
+					continue
+				}
+
+				c++
+				this.current = caseClause
+				this.tryPrintCaseClauseLabel(includeFallthrough && c > 1, stmt)
+				if c == 1 || includeFallthrough {
+					this.printf("if ")
+				} else {
+					this.printf("elseif ")
+				}
+				this.walkCaseClause(caseClause, n.Tag != nil, switchLabel, funcNode)
 				if includeFallthrough {
-					switchLabel = this.makeFuncScopeUniqueName(funcNode, "switch")
-					this.println("local __fall = false")
-					for i, stmt := range n.Body.List {
-						if _, ok := this.FallthroughCases[stmt]; ok {
-							this.FallthroughCases[stmt] = fmt.Sprintf("%s_%d", switchLabel, i+1)
-						}
-					}
-				}
-
-				var def *ast.CaseClause
-				var c int
-				for _, stmt := range n.Body.List {
-					caseClause, ok := stmt.(*ast.CaseClause)
-					if !ok {
-						panic("IMPOSSIBLE")
-					}
-					if caseClause.List == nil {
-						def = caseClause
-						continue
-					}
-
-					c++
-					this.current = caseClause
-					this.tryPrintCaseClauseLabel(includeFallthrough && c > 1, stmt)
-					if c == 1 || includeFallthrough {
-						this.printf("if ")
-					} else {
-						this.printf("elseif ")
-					}
-					this.walkCaseClause(caseClause, funcNode, switchLabel)
-					if includeFallthrough {
-						this.println("end")
-					}
-				}
-
-				if def != nil {
-					c++
-					this.current = def
-					this.tryPrintCaseClauseLabel(includeFallthrough && c > 1, def)
-					if c > 0 && !includeFallthrough {
-						this.println("else")
-					} else {
-						this.println("do")
-					}
-					this.walkCaseClause(def, funcNode, switchLabel)
-					if includeFallthrough {
-						this.println("end")
-					}
-				}
-
-				if len(n.Body.List) > 0 && !includeFallthrough {
 					this.println("end")
 				}
 			}
 
-			this.indent--
-			this.print("until true")
-		} else {
-			this.walkImpl(n.Body, funcNode)
+			if def != nil {
+				c++
+				this.current = def
+				this.tryPrintCaseClauseLabel(includeFallthrough && c > 1, def)
+				if c > 0 && !includeFallthrough {
+					this.println("else")
+				} else {
+					this.println("do")
+				}
+				this.walkCaseClause(def, n.Tag != nil, switchLabel, funcNode)
+				if includeFallthrough {
+					this.println("end")
+				}
+			}
+
+			if len(n.Body.List) > 0 && !includeFallthrough {
+				this.println("end")
+			}
 		}
+
+		this.indent--
+		this.print("until true")
 
 		if n.Init != nil {
 			this.indent--
@@ -986,7 +985,7 @@ func (this *Walker) tryPrintCaseClauseLabel(newline bool, node ast.Node) {
 	}
 }
 
-func (this *Walker) walkCaseClause(node *ast.CaseClause, funcNode ast.Node, switchLabel string) {
+func (this *Walker) walkCaseClause(node *ast.CaseClause, hasTag bool, switchLabel string, funcNode ast.Node) {
 	this.indent++
 	_, fallthroughCase := this.FallthroughCases[node]
 	for i, expr := range node.List {
@@ -997,13 +996,23 @@ func (this *Walker) walkCaseClause(node *ast.CaseClause, funcNode ast.Node, swit
 		}
 		switch e := expr.(type) {
 		case *ast.BasicLit:
-			this.printf("switchTag == %s ", e.Value)
+			if hasTag {
+				this.printf("__switch == %s ", e.Value)
+			} else {
+				this.printf("%s ", e.Value)
+			}
 		case *ast.Ident:
-			this.printf("switchTag == %s ", e.Name)
+			if hasTag {
+				this.printf("__switch == %s ", e.Name)
+			} else {
+				this.printf("%s ", e.Name)
+			}
 		default:
-			this.print("switchTag == (")
+			if hasTag {
+				this.print("__switch == ")
+			}
 			this.walkImpl(e, funcNode)
-			this.print(") ")
+			this.print(" ")
 		}
 	}
 

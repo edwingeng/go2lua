@@ -131,11 +131,11 @@ local forLoop11 = function()
         local i = 0
         while i < 4 do
             repeat
-                local switchTag = i
-                if switchTag == 0 then
+                local __switch = i
+                if __switch == 0 then
                     goto outer_continue
-                elseif switchTag == 1 then
-                elseif switchTag == 2 then
+                elseif __switch == 1 then
+                elseif __switch == 2 then
                     print("a", i)
                 else
                     goto outer_break

@@ -43,18 +43,18 @@ local switch4 = function(n)
         if __switch == 1 then
             print("a", n)
             __fall = true
-            goto __switch_2
+            goto __case_2
         end
         
-    ::__switch_2::
+    ::__case_2::
         if  __fall or __switch == 2 then
             __fall = false
             print("b", n)
             __fall = true
-            goto __switch_3
+            goto __case_3
         end
         
-    ::__switch_3::
+    ::__case_3::
         if  __fall or __switch == 3 then
             __fall = false
             print("c", n)
@@ -69,22 +69,22 @@ local switch4 = function(n)
         if __switch == 5 then
             print("e", n)
             __fall = true
-            goto __switch_6
+            goto __case_6
         end
         
-    ::__switch_7::
+    ::__case_7::
         if  __fall or __switch == 6 or __switch == 7 then
             __fall = false
             print("g", n)
             goto __switch_break
         end
         
-    ::__switch_6::
+    ::__case_6::
         do
             __fall = false
             print("f", n)
             __fall = true
-            goto __switch_7
+            goto __case_7
         end
     until true
 ::__switch_break::
@@ -96,18 +96,18 @@ local switch5 = function(n)
         if n == 1 then
             print("a", n)
             __fall = true
-            goto __switch_2
+            goto __case_2
         end
         
-    ::__switch_2::
+    ::__case_2::
         if  __fall or n == 2 then
             __fall = false
             print("b", n)
             __fall = true
-            goto __switch_3
+            goto __case_3
         end
         
-    ::__switch_3::
+    ::__case_3::
         if  __fall or n == 3 then
             __fall = false
             print("c", n)
@@ -122,22 +122,22 @@ local switch5 = function(n)
         if n == 5 then
             print("e", n)
             __fall = true
-            goto __switch_6
+            goto __case_6
         end
         
-    ::__switch_7::
+    ::__case_7::
         if  __fall or n == 6 or n == 7 then
             __fall = false
             print("g", n)
             goto __switch_break
         end
         
-    ::__switch_6::
+    ::__case_6::
         do
             __fall = false
             print("f", n)
             __fall = true
-            goto __switch_7
+            goto __case_7
         end
     until true
 ::__switch_break::

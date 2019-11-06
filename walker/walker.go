@@ -164,7 +164,7 @@ func (this *Walker) makeFuncScopeUniqueName(funcNode ast.Node, key string) strin
 	if _, ok := nm[newName]; ok {
 		i := 2
 		for ; i < 999; i++ {
-			str := fmt.Sprintf("%s_%d", newName, i)
+			str := fmt.Sprintf("%s_x%d", newName, i)
 			if _, ok := nm[str]; !ok {
 				newName = str
 				break
@@ -683,6 +683,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 		var includeFallthrough bool
 		var switchLabel string
+		var caseLabel string
 
 		this.println("repeat")
 		this.indent++
@@ -701,10 +702,11 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			}
 			if includeFallthrough {
 				switchLabel = this.makeFuncScopeUniqueName(funcNode, "switch")
+				caseLabel = this.makeFuncScopeUniqueName(funcNode, "case")
 				this.println("local __fall = false")
 				for i, stmt := range n.Body.List {
 					if _, ok := this.FallthroughCases[stmt]; ok {
-						this.FallthroughCases[stmt] = fmt.Sprintf("%s_%d", switchLabel, i+1)
+						this.FallthroughCases[stmt] = fmt.Sprintf("%s_%d", caseLabel, i+1)
 					}
 				}
 			}
@@ -729,7 +731,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 				} else {
 					this.printf("elseif ")
 				}
-				this.walkCaseClause(caseClause, n.Tag != nil, switchLabel, funcNode)
+				this.walkCaseClause(caseClause, n.Tag != nil, switchLabel, caseLabel, funcNode)
 				if includeFallthrough {
 					this.println("end")
 				}
@@ -744,7 +746,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 				} else {
 					this.println("do")
 				}
-				this.walkCaseClause(def, n.Tag != nil, switchLabel, funcNode)
+				this.walkCaseClause(def, n.Tag != nil, switchLabel, caseLabel, funcNode)
 				if includeFallthrough {
 					this.println("end")
 				}
@@ -985,7 +987,7 @@ func (this *Walker) tryPrintCaseClauseLabel(newline bool, node ast.Node) {
 	}
 }
 
-func (this *Walker) walkCaseClause(node *ast.CaseClause, hasTag bool, switchLabel string, funcNode ast.Node) {
+func (this *Walker) walkCaseClause(node *ast.CaseClause, hasTag bool, switchLabel, caseLabel string, funcNode ast.Node) {
 	this.indent++
 	_, fallthroughCase := this.FallthroughCases[node]
 	for i, expr := range node.List {
@@ -1023,7 +1025,7 @@ func (this *Walker) walkCaseClause(node *ast.CaseClause, hasTag bool, switchLabe
 		this.println("__fall = false")
 	}
 	this.walkStmtList(node.Body, true, funcNode)
-	if switchLabel != "" {
+	if caseLabel != "" {
 		if n := len(node.Body); n > 0 {
 			if _, ok := node.Body[n-1].(*ast.BranchStmt); !ok {
 				this.printf("goto %s_break\n", switchLabel)

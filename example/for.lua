@@ -59,10 +59,10 @@ local forLoop6 = function()
         local i = 0
         while i < 3 do
             if i >= 1 then
-                goto __continue_2
+                goto __continue_x2
             end
             print(i)
-        ::__continue_2::
+        ::__continue_x2::
             i = i + 1
         end
     end

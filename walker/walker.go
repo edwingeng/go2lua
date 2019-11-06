@@ -9,6 +9,7 @@ import (
 	"go/token"
 	"io/ioutil"
 	"os"
+	"strings"
 	"unicode"
 	"unicode/utf8"
 )
@@ -382,6 +383,7 @@ func (this *Walker) walkStmtList(list []ast.Stmt, newline bool, funcNode ast.Nod
 func (this *Walker) walkDeclList(list []ast.Decl, funcNode ast.Node) {
 	for _, x := range list {
 		this.walkImpl(x, funcNode)
+		this.println()
 	}
 }
 
@@ -745,7 +747,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 				c++
 				this.current = caseClause
-				this.tryPrintCaseClauseLabel(includeFallthrough && c > 1, stmt)
+				this.printCaseClauseLabel(includeFallthrough && c > 1, stmt)
 				if c == 1 || includeFallthrough {
 					this.printf("if ")
 				} else {
@@ -760,7 +762,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			if def != nil {
 				c++
 				this.current = def
-				this.tryPrintCaseClauseLabel(includeFallthrough && c > 1, def)
+				this.printCaseClauseLabel(includeFallthrough && c > 1, def)
 				if c > 0 && !includeFallthrough {
 					this.println("else")
 				} else {
@@ -933,8 +935,47 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		if n.Doc != nil {
 			this.walkImpl(n.Doc, funcNode)
 		}
-		for _, s := range n.Specs {
-			this.walkImpl(s, funcNode)
+		switch n.Tok {
+		case token.VAR, token.CONST:
+			this.current = n
+			this.print()
+			for i, s := range n.Specs {
+				if i > 0 {
+					this.current = s
+					this.println()
+				}
+				var mixedNames, lowerNames, upperNames []string
+				spec, ok := s.(*ast.ValueSpec)
+				if !ok {
+					panic("IMPOSSIBLE")
+				}
+				if funcNode != nil {
+					for _, name := range spec.Names {
+						mixedNames = append(mixedNames, name.Name)
+					}
+				} else {
+					for _, name := range spec.Names {
+						if unicode.IsUpper(rune(name.Name[0])) {
+							upperNames = append(upperNames, name.Name)
+						} else {
+							lowerNames = append(lowerNames, name.Name)
+						}
+					}
+				}
+
+				if len(mixedNames) > 0 {
+					this.printVarDefinition(true, mixedNames, spec, funcNode)
+				}
+				if len(lowerNames) > 0 {
+					this.printVarDefinition(true, lowerNames, spec, funcNode)
+				}
+				if len(lowerNames) > 0 && len(upperNames) > 0 {
+					this.println()
+				}
+				if len(upperNames) > 0 {
+					this.printVarDefinition(false, upperNames, spec, funcNode)
+				}
+			}
 		}
 
 	case *ast.FuncDecl:
@@ -996,7 +1037,67 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 	}
 }
 
-func (this *Walker) tryPrintCaseClauseLabel(newline bool, node ast.Node) {
+func (this *Walker) printVarDefinition(local bool, names []string, spec *ast.ValueSpec, funcNode ast.Node) {
+	if local {
+		this.print("local ")
+	}
+	leN := len(names)
+	switch leN {
+	case 0:
+	case 1:
+		this.printf("%s ", names[0])
+	default:
+		this.printf("%s ", strings.Join(names, ", "))
+	}
+
+	if len(spec.Values) > 0 {
+		this.print("= ")
+		for i, v := range spec.Values {
+			if i > 0 {
+				this.print(", ")
+			}
+			this.walkImpl(v, funcNode)
+		}
+	} else {
+		this.print("= ")
+		defVal, err := defaultValue(spec.Type)
+		if err != nil {
+			this.printError(err, spec.Type)
+		}
+		for i := 0; i < leN; i++ {
+			if i > 0 {
+				this.print(", ")
+			}
+			this.print(defVal)
+		}
+	}
+}
+
+func defaultValue(expr ast.Expr) (string, error) {
+	switch t := expr.(type) {
+	case *ast.Ident:
+		switch t.Name {
+		case "int8", "int16", "int32", "int64", "int", "uint8", "uint16", "uint32", "uint64", "uint":
+			return "0", nil
+		case "string":
+			return `""`, nil
+		case "bool":
+			return "false", nil
+		case "rune", "byte", "uintptr", "float32", "float64":
+			return "0", nil
+		case "complex64", "complex128":
+			return "", fmt.Errorf("unsupported data type: %s", t)
+		case "":
+			return "", errors.New("missing data type")
+		default:
+			return "{}", nil
+		}
+	default:
+		return "nil", nil
+	}
+}
+
+func (this *Walker) printCaseClauseLabel(newline bool, node ast.Node) {
 	if newline {
 		this.println()
 	}

@@ -45,7 +45,7 @@ local switch4 = function(n)
             __fall = true
             goto __case_2
         end
-        
+
     ::__case_2::
         if  __fall or __switch == 2 then
             __fall = false
@@ -53,32 +53,32 @@ local switch4 = function(n)
             __fall = true
             goto __case_3
         end
-        
+
     ::__case_3::
         if  __fall or __switch == 3 then
             __fall = false
             print("c", n)
             break
         end
-        
+
         if __switch == 4 then
             print("d", n)
             goto __switch_break
         end
-        
+
         if __switch == 5 then
             print("e", n)
             __fall = true
             goto __case_6
         end
-        
+
     ::__case_7::
         if  __fall or __switch == 6 or __switch == 7 then
             __fall = false
             print("g", n)
             goto __switch_break
         end
-        
+
     ::__case_6::
         do
             __fall = false
@@ -98,7 +98,7 @@ local switch5 = function(n)
             __fall = true
             goto __case_2
         end
-        
+
     ::__case_2::
         if  __fall or n == 2 then
             __fall = false
@@ -106,32 +106,32 @@ local switch5 = function(n)
             __fall = true
             goto __case_3
         end
-        
+
     ::__case_3::
         if  __fall or n == 3 then
             __fall = false
             print("c", n)
             break
         end
-        
+
         if n == 4 then
             print("d", n)
             goto __switch_break
         end
-        
+
         if n == 5 then
             print("e", n)
             __fall = true
             goto __case_6
         end
-        
+
     ::__case_7::
         if  __fall or n == 6 or n == 7 then
             __fall = false
             print("g", n)
             goto __switch_break
         end
-        
+
     ::__case_6::
         do
             __fall = false

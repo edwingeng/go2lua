@@ -1,6 +1,7 @@
 package walker
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -397,6 +398,25 @@ func (this *Walker) Walk() {
 	if n := len(bts); n < this.buffer.Len() {
 		this.buffer.Truncate(n + 1)
 	}
+
+	var newBuf bytes.Buffer
+	newBuf.Grow(this.buffer.Len())
+	var blankLine bool
+	scanner := bufio.NewScanner(&this.buffer)
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		newLine := bytes.TrimRightFunc(line, unicode.IsSpace)
+		n := len(newLine)
+		if n == 0 {
+			if blankLine {
+				continue
+			}
+		}
+		newBuf.Write(newLine)
+		newBuf.WriteByte('\n')
+		blankLine = n == 0
+	}
+	this.buffer = newBuf
 }
 
 func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {

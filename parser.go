@@ -8,15 +8,27 @@ import (
 	"io/ioutil"
 	"math"
 	"path/filepath"
+	"regexp"
+	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/edwingeng/go2lua/walker"
+	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/passes/inspect"
+	"golang.org/x/tools/go/analysis/passes/shadow"
+	"golang.org/x/tools/go/ast/inspector"
 	"golang.org/x/tools/go/packages"
 )
 
 var (
-	TotalErrors int
+	SyntaxErrorDetected bool
+)
+
+var (
+	rexShadow      = regexp.MustCompile(`shadows declaration at line (\d+)`)
+	shadowFlagOnce sync.Once
 )
 
 type Parser struct {
@@ -76,10 +88,40 @@ func (this *Parser) Parse() error {
 	return err
 }
 
+func findShadows(pkg *packages.Package, syn *ast.File) map[token.Pos]int {
+	m := make(map[token.Pos]int)
+	pass := &analysis.Pass{
+		Analyzer:   shadow.Analyzer,
+		Fset:       pkg.Fset,
+		Files:      []*ast.File{syn},
+		OtherFiles: pkg.OtherFiles,
+		Pkg:        pkg.Types,
+		TypesInfo:  pkg.TypesInfo,
+		TypesSizes: pkg.TypesSizes,
+	}
+	shadowFlagOnce.Do(func() {
+		if err := shadow.Analyzer.Flags.Parse([]string{"-strict"}); err != nil {
+			panic(err)
+		}
+	})
+	pass.ResultOf = map[*analysis.Analyzer]interface{}{
+		inspect.Analyzer: inspector.New(pass.Files),
+	}
+	pass.Report = func(d analysis.Diagnostic) {
+		matches := rexShadow.FindStringSubmatch(d.Message)
+		if len(matches) > 0 {
+			n, _ := strconv.Atoi(matches[1])
+			m[d.Pos] = n
+		}
+	}
+	_, _ = pass.Analyzer.Run(pass)
+	return m
+}
+
 func (this *Parser) Output(dir string) {
 	type item struct {
-		fset *token.FileSet
-		file *ast.File
+		pkg *packages.Package
+		syn *ast.File
 	}
 
 	ch := make(chan item)
@@ -93,8 +135,8 @@ func (this *Parser) Output(dir string) {
 		for _, pkg := range this.pkgs {
 			for _, syn := range pkg.Syntax {
 				ch <- item{
-					fset: pkg.Fset,
-					file: syn,
+					pkg: pkg,
+					syn: syn,
 				}
 			}
 		}
@@ -109,20 +151,25 @@ func (this *Parser) Output(dir string) {
 					break
 				}
 
-				f1 := item.fset.Position(item.file.Package).Filename
+				f1 := item.pkg.Fset.Position(item.syn.Package).Filename
 				if this.fileFilter != nil && !this.fileFilter(f1) {
 					continue
 				}
 
-				w := walker.NewWalker(item.fset, item.file)
+				shadows := findShadows(item.pkg, item.syn)
+				w := walker.NewWalker(item.pkg.Fset, item.syn, walker.WithShadows(shadows))
 				w.Walk()
-				TotalErrors += w.NumErrors
 
+				runtime.Gosched()
 				f2 := filepath.Base(f1)
 				f3 := strings.TrimSuffix(f2, ".go") + ".lua"
 				f4 := filepath.Join(dir, f3)
 				if err := ioutil.WriteFile(f4, w.BufferBytes(), 0644); err != nil {
 					panic(err)
+				}
+
+				if !SyntaxErrorDetected {
+					SyntaxErrorDetected = w.NumErrors > 0
 				}
 			}
 		}()
@@ -160,6 +207,10 @@ func (this *Parser) PrintDetails(astTree, luaCode bool) {
 				fmt.Println("==========", f1[len(commonPrefix):])
 				fmt.Println()
 				fmt.Println(w.BufferString())
+
+				if !SyntaxErrorDetected {
+					SyntaxErrorDetected = w.NumErrors > 0
+				}
 			}
 		}
 	}

@@ -9,7 +9,7 @@ end
 local forLoop2 = function()
     do
         local i = 0
-        while i < 1 do
+        while i < 3 do
             i = i + 1
         end
     end
@@ -35,10 +35,8 @@ end
 local forLoop5 = function()
     local i = 0
     while true do
-        do
-            if i >= 1 then
-                break
-            end
+        if i >= 1 then
+            break
         end
         i = i + 1
     end
@@ -48,12 +46,10 @@ local forLoop6 = function()
     do
         local i = 0
         while i < 3 do
-            do
-                if i >= 1 then
-                    goto xxx_continue_1
-                end
-                print(i)
+            if i >= 1 then
+                goto xxx_continue_1
             end
+            print(i)
         ::xxx_continue_1::
             i = i + 1
         end
@@ -64,10 +60,8 @@ local forLoop7 = function()
     do
         local i = 0
         while i < 3 do
-            do
-                while true do
-                    goto pos1_break
-                end
+            while true do
+                goto pos1_break
             end
             i = i + 1
         end
@@ -79,10 +73,8 @@ local forLoop8 = function()
     do
         local i = 0
         while i < 3 do
-            do
-                while true do
-                    goto pos1_continue
-                end
+            while true do
+                goto pos1_continue
             end
         ::pos1_continue::
             i = i + 1
@@ -100,12 +92,23 @@ local forLoop9 = function(n)
     do
         local i = 0
         while i < 3 do
-            do
-                while true do
-                    goto pos1_continue
-                end
+            while true do
+                goto pos1_continue
             end
         ::pos1_continue::
+            i = i + 1
+        end
+    end
+end
+
+local forLoop10 = function()
+    do
+        local i = 0
+        while i < 3 do
+            do
+                local i = i * 10
+                print(i)
+            end
             i = i + 1
         end
     end

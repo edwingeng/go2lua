@@ -35,8 +35,9 @@ type gotoLabelInfo struct {
 }
 
 type Walker struct {
-	Fset *token.FileSet
-	root ast.Node
+	Fset    *token.FileSet
+	root    ast.Node
+	shadows map[token.Pos]int
 
 	fileData []byte
 	current  ast.Node
@@ -50,9 +51,10 @@ type Walker struct {
 	BreakLabels    map[ast.Node]string
 	ContinueLabels map[ast.Node]string
 	GotoLabels     map[gotoLabelInfo]struct{}
+	ForShadows     map[ast.Node]struct{}
 }
 
-func NewWalker(fset *token.FileSet, node ast.Node) *Walker {
+func NewWalker(fset *token.FileSet, node ast.Node, opts ...Option) *Walker {
 	w := &Walker{
 		Fset:           fset,
 		root:           node,
@@ -61,6 +63,10 @@ func NewWalker(fset *token.FileSet, node ast.Node) *Walker {
 		BreakLabels:    make(map[ast.Node]string),
 		ContinueLabels: make(map[ast.Node]string),
 		GotoLabels:     make(map[gotoLabelInfo]struct{}),
+		ForShadows:     make(map[ast.Node]struct{}),
+	}
+	for _, opt := range opts {
+		opt(w)
 	}
 	return w
 }
@@ -160,6 +166,24 @@ func (this *Walker) initialize() {
 			}
 			stack = stack[:len(stack)-1]
 			return true
+		}
+
+		if this.shadows != nil {
+			if n1, ok := this.shadows[node.Pos()]; ok {
+				var forNode ast.Node
+				for i := len(stack) - 1; i >= 0; i-- {
+					if _, ok := stack[i].(*ast.ForStmt); ok {
+						forNode = stack[i]
+						break
+					}
+				}
+				if forNode != nil {
+					n2 := this.Fset.Position(forNode.Pos()).Line
+					if n2 == n1 {
+						this.ForShadows[forNode] = struct{}{}
+					}
+				}
+			}
 		}
 
 		stack = append(stack, node)
@@ -313,7 +337,12 @@ func (this *Walker) Walk() {
 
 	this.initialize()
 	this.walkImpl(this.root, nil)
-	this.trim()
+
+	bts := this.buffer.Bytes()
+	bts = bytes.TrimRight(bts, "\n")
+	if n := len(bts); n < this.buffer.Len() {
+		this.buffer.Truncate(n + 1)
+	}
 }
 
 func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
@@ -674,13 +703,17 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		}
 
 		if n.Post != nil && n.Body != nil && len(n.Body.List) > 0 {
-			this.indent++
-			this.println("do")
+			if _, ok := this.ForShadows[n]; ok {
+				this.indent++
+				this.println("do")
+			}
 		}
 		this.walkImpl(n.Body, funcNode)
 		if n.Post != nil && n.Body != nil && len(n.Body.List) > 0 {
-			this.println("end")
-			this.indent--
+			if _, ok := this.ForShadows[n]; ok {
+				this.println("end")
+				this.indent--
+			}
 		}
 
 		if label, ok := this.ContinueLabels[n]; ok {
@@ -869,18 +902,18 @@ func (this *Walker) walkCaseClause(node *ast.CaseClause, funcNode ast.Node) {
 	this.indent--
 }
 
-func (this *Walker) trim() {
-	bts := this.buffer.Bytes()
-	bts = bytes.TrimRight(bts, "\n")
-	if n := len(bts); n < this.buffer.Len() {
-		this.buffer.Truncate(n + 1)
-	}
-}
-
 func (this *Walker) BufferString() string {
 	return this.buffer.String()
 }
 
 func (this *Walker) BufferBytes() []byte {
 	return this.buffer.Bytes()
+}
+
+type Option func(w *Walker)
+
+func WithShadows(shadows map[token.Pos]int) Option {
+	return func(w *Walker) {
+		w.shadows = shadows
+	}
 }

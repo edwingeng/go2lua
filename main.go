@@ -49,7 +49,7 @@ func main() {
 		p.PrintDetails(*astTree, true)
 	}
 
-	if TotalErrors > 0 {
+	if SyntaxErrorDetected {
 		os.Exit(1)
 	}
 }

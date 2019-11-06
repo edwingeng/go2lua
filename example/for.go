@@ -7,7 +7,7 @@ func forLoop1() {
 }
 
 func forLoop2() {
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 3; i++ {
 		// Empty
 	}
 }
@@ -73,5 +73,12 @@ pos1:
 		for {
 			continue pos1
 		}
+	}
+}
+
+func forLoop10() {
+	for i := 0; i < 3; i++ {
+		i := i * 10
+		println(i)
 	}
 }

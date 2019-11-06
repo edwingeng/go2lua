@@ -39,31 +39,37 @@ type Walker struct {
 	root    ast.Node
 	shadows map[token.Pos]int
 
-	fileData []byte
-	current  ast.Node
-	nextNums map[string]int
-	indent   int
+	fileData       []byte
+	current        ast.Node
+	nextNums       map[string]int
+	funcScopeNames map[ast.Node]map[string]struct{}
+	indent         int
 
-	buffer         bytes.Buffer
-	NumErrors      int
-	FuncInit       bool
-	ElseIfs        map[ast.Node]struct{}
-	BreakLabels    map[ast.Node]string
-	ContinueLabels map[ast.Node]string
-	GotoLabels     map[gotoLabelInfo]struct{}
-	ForShadows     map[ast.Node]struct{}
+	buffer           bytes.Buffer
+	NumErrors        int
+	FuncInit         bool
+	ElseIfs          map[ast.Node]struct{}
+	BreakLabels      map[ast.Node]string
+	ContinueLabels   map[ast.Node]string
+	GotoLabels       map[gotoLabelInfo]struct{}
+	ForShadows       map[ast.Node]struct{}
+	Fallthroughs     map[ast.Node]ast.Node
+	FallthroughCases map[ast.Node]string
 }
 
 func NewWalker(fset *token.FileSet, node ast.Node, opts ...Option) *Walker {
 	w := &Walker{
-		Fset:           fset,
-		root:           node,
-		nextNums:       make(map[string]int),
-		ElseIfs:        make(map[ast.Node]struct{}),
-		BreakLabels:    make(map[ast.Node]string),
-		ContinueLabels: make(map[ast.Node]string),
-		GotoLabels:     make(map[gotoLabelInfo]struct{}),
-		ForShadows:     make(map[ast.Node]struct{}),
+		Fset:             fset,
+		root:             node,
+		nextNums:         make(map[string]int),
+		funcScopeNames:   make(map[ast.Node]map[string]struct{}),
+		ElseIfs:          make(map[ast.Node]struct{}),
+		BreakLabels:      make(map[ast.Node]string),
+		ContinueLabels:   make(map[ast.Node]string),
+		GotoLabels:       make(map[gotoLabelInfo]struct{}),
+		ForShadows:       make(map[ast.Node]struct{}),
+		Fallthroughs:     make(map[ast.Node]ast.Node),
+		FallthroughCases: make(map[ast.Node]string),
 	}
 	for _, opt := range opts {
 		opt(w)
@@ -71,52 +77,64 @@ func NewWalker(fset *token.FileSet, node ast.Node, opts ...Option) *Walker {
 	return w
 }
 
-func (this *Walker) printIndent() {
+func (this *Walker) printIndent(blank bool) {
 	bts := this.buffer.Bytes()
-	if n := len(bts); n > 0 && bts[n-1] == '\n' {
-		var c int
-		pos := this.Fset.Position(this.current.Pos())
-		for i := pos.Offset; i >= 0; {
-			r, size := utf8.DecodeLastRune(this.fileData[:i])
-			i -= size
-			if r == '\n' {
-				if c++; c >= 2 {
-					break
-				}
-			} else if !unicode.IsSpace(r) {
-				break
-			}
-		}
-		if c >= 2 {
-			for i := n - 1; i >= 0; {
-				r, size := utf8.DecodeLastRune(bts[:i])
-				i -= size
-				if r == '\n' {
-					break
-				} else if !unicode.IsSpace(r) {
-					this.buffer.WriteByte('\n')
-					break
-				}
-			}
-		}
+	n := len(bts)
+	if n == 0 {
 		for i := 0; i < this.indent; i++ {
 			this.buffer.Write(indentBytes)
 		}
+		return
+	}
+	if bts[n-1] != '\n' {
+		return
+	}
+
+	var c int
+	pos := this.Fset.Position(this.current.Pos())
+	for i := pos.Offset; i >= 0; {
+		r, size := utf8.DecodeLastRune(this.fileData[:i])
+		i -= size
+		if r == '\n' {
+			if c++; c >= 2 {
+				break
+			}
+		} else if !unicode.IsSpace(r) {
+			break
+		}
+	}
+	if c >= 2 {
+		for i := n - 1; i >= 0; {
+			r, size := utf8.DecodeLastRune(bts[:i])
+			i -= size
+			if r == '\n' {
+				break
+			} else if !unicode.IsSpace(r) {
+				if !blank {
+					this.buffer.WriteByte('\n')
+				}
+				break
+			}
+		}
+	}
+
+	for i := 0; i < this.indent; i++ {
+		this.buffer.Write(indentBytes)
 	}
 }
 
 func (this *Walker) print(a ...interface{}) {
-	this.printIndent()
+	this.printIndent(false)
 	_, _ = fmt.Fprint(&this.buffer, a...)
 }
 
 func (this *Walker) println(a ...interface{}) {
-	this.printIndent()
+	this.printIndent(len(a) == 0)
 	_, _ = fmt.Fprintln(&this.buffer, a...)
 }
 
 func (this *Walker) printf(format string, a ...interface{}) {
-	this.printIndent()
+	this.printIndent(false)
 	_, _ = fmt.Fprintf(&this.buffer, format, a...)
 }
 
@@ -132,7 +150,33 @@ func (this *Walker) printError(err error, node ast.Node) {
 
 func (this *Walker) makeUniqueName(key string) string {
 	this.nextNums[key]++
-	return fmt.Sprintf("xxx_%s_%d", key, this.nextNums[key])
+	return fmt.Sprintf("__unique_%s_%d", key, this.nextNums[key])
+}
+
+func (this *Walker) makeFuncScopeUniqueName(funcNode ast.Node, key string) string {
+	nm, ok := this.funcScopeNames[funcNode]
+	if !ok {
+		nm = make(map[string]struct{})
+		this.funcScopeNames[funcNode] = nm
+	}
+
+	newName := fmt.Sprintf("__%s", key)
+	if _, ok := nm[newName]; ok {
+		i := 2
+		for ; i < 999; i++ {
+			str := fmt.Sprintf("%s_%d", newName, i)
+			if _, ok := nm[str]; !ok {
+				newName = str
+				break
+			}
+		}
+		if i > 999 {
+			panic("IMPOSSIBLE")
+		}
+	}
+
+	nm[newName] = struct{}{}
+	return newName
 }
 
 func (this *Walker) isCallExpr_MakeMap(node ast.Node) bool {
@@ -157,12 +201,18 @@ func (this *Walker) initialize() {
 
 	var stack []ast.Node
 	var funcStack []ast.Node
+	var switchStack []*ast.SwitchStmt
+	var caseStack []*ast.CaseClause
 	ast.Inspect(this.root, func(node ast.Node) bool {
 		if node == nil {
 			n := stack[len(stack)-1]
 			switch n.(type) {
 			case *ast.FuncLit, *ast.FuncDecl:
 				funcStack = funcStack[:len(funcStack)-1]
+			case *ast.SwitchStmt:
+				switchStack = switchStack[:len(switchStack)-1]
+			case *ast.CaseClause:
+				caseStack = caseStack[:len(caseStack)-1]
 			}
 			stack = stack[:len(stack)-1]
 			return true
@@ -190,6 +240,10 @@ func (this *Walker) initialize() {
 		switch n := node.(type) {
 		case *ast.FuncLit, *ast.FuncDecl:
 			funcStack = append(funcStack, node)
+		case *ast.SwitchStmt:
+			switchStack = append(switchStack, n)
+		case *ast.CaseClause:
+			caseStack = append(caseStack, n)
 		case *ast.BranchStmt:
 			switch {
 			case n.Label == nil && n.Tok == token.CONTINUE:
@@ -210,7 +264,8 @@ func (this *Walker) initialize() {
 				}
 				if _, ok := this.ContinueLabels[loopNode]; !ok {
 					if loopNodeLabel == "" {
-						this.ContinueLabels[loopNode] = this.makeUniqueName("continue")
+						funcNode := funcStack[len(funcStack)-1]
+						this.ContinueLabels[loopNode] = this.makeFuncScopeUniqueName(funcNode, "continue")
 					} else {
 						this.ContinueLabels[loopNode] = loopNodeLabel
 					}
@@ -261,6 +316,23 @@ func (this *Walker) initialize() {
 					name:     n.Label.Name,
 				}
 				this.GotoLabels[key] = struct{}{}
+
+			case n.Tok == token.FALLTHROUGH:
+				var targetCase *ast.CaseClause
+				curSwitch := switchStack[len(switchStack)-1]
+				curCase := caseStack[len(caseStack)-1]
+				if curSwitch.Body != nil {
+					for i, caseClause := range curSwitch.Body.List {
+						if curCase == caseClause {
+							targetCase = curSwitch.Body.List[i+1].(*ast.CaseClause)
+						}
+					}
+				}
+				if targetCase == nil {
+					panic("IMPOSSIBLE")
+				}
+				this.Fallthroughs[node] = targetCase
+				this.FallthroughCases[targetCase] = ""
 			}
 		}
 
@@ -553,23 +625,33 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.walkExprList(n.Results, funcNode)
 
 	case *ast.BranchStmt:
-		if n.Label == nil {
-			switch n.Tok {
-			case token.BREAK:
+		switch n.Tok {
+		case token.BREAK:
+			if n.Label == nil {
 				this.print("break")
-			case token.CONTINUE:
-				this.printf("goto %s", this.ContinueLabels[n])
-			case token.GOTO:
-				this.printError(errors.New("missing label"), node)
-			}
-		} else {
-			switch n.Tok {
-			case token.BREAK:
+			} else {
 				this.printf("goto %s_break", n.Label)
-			case token.CONTINUE:
+			}
+		case token.CONTINUE:
+			if n.Label == nil {
+				this.printf("goto %s", this.ContinueLabels[n])
+			} else {
 				this.printf("goto %s_continue", n.Label)
-			case token.GOTO:
+			}
+		case token.GOTO:
+			if n.Label == nil {
+				this.printError(errors.New("missing label"), node)
+			} else {
 				this.printf("goto %s", n.Label)
+			}
+		case token.FALLTHROUGH:
+			if n.Label == nil {
+				caseNode := this.Fallthroughs[n]
+				label := this.FallthroughCases[caseNode]
+				this.println("__fall = true")
+				this.printf("goto %s", label)
+			} else {
+				this.printError(errors.New("unexpected label"), node)
 			}
 		}
 
@@ -617,14 +699,32 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			this.println()
 		}
 
+		var includeFallthrough bool
+		var switchLabel string
 		if n.Tag != nil {
-			this.println("do")
+			this.println("repeat")
 			this.indent++
 			this.printf("local switchTag = ")
 			this.walkImpl(n.Tag, funcNode)
 			this.println()
 
 			if n.Body != nil {
+				for _, stmt := range n.Body.List {
+					if _, ok := this.FallthroughCases[stmt]; ok {
+						includeFallthrough = true
+						break
+					}
+				}
+				if includeFallthrough {
+					switchLabel = this.makeFuncScopeUniqueName(funcNode, "switch")
+					this.println("local __fall = false")
+					for i, stmt := range n.Body.List {
+						if _, ok := this.FallthroughCases[stmt]; ok {
+							this.FallthroughCases[stmt] = fmt.Sprintf("%s_%d", switchLabel, i+1)
+						}
+					}
+				}
+
 				var def *ast.CaseClause
 				var c int
 				for _, stmt := range n.Body.List {
@@ -637,31 +737,42 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 						continue
 					}
 
-					if c++; c == 1 {
+					c++
+					this.current = caseClause
+					this.tryPrintCaseClauseLabel(includeFallthrough && c > 1, stmt)
+					if c == 1 || includeFallthrough {
 						this.printf("if ")
 					} else {
 						this.printf("elseif ")
 					}
-
-					this.walkCaseClause(caseClause, funcNode)
+					this.walkCaseClause(caseClause, funcNode, switchLabel)
+					if includeFallthrough {
+						this.println("end")
+					}
 				}
 
 				if def != nil {
-					if c > 0 {
+					c++
+					this.current = def
+					this.tryPrintCaseClauseLabel(includeFallthrough && c > 1, def)
+					if c > 0 && !includeFallthrough {
 						this.println("else")
 					} else {
 						this.println("do")
 					}
-					this.walkCaseClause(def, funcNode)
+					this.walkCaseClause(def, funcNode, switchLabel)
+					if includeFallthrough {
+						this.println("end")
+					}
 				}
 
-				if len(n.Body.List) > 0 {
+				if len(n.Body.List) > 0 && !includeFallthrough {
 					this.println("end")
 				}
 			}
 
 			this.indent--
-			this.print("end")
+			this.print("until true")
 		} else {
 			this.walkImpl(n.Body, funcNode)
 		}
@@ -669,6 +780,12 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		if n.Init != nil {
 			this.indent--
 			this.println("end")
+		}
+		if includeFallthrough {
+			this.println()
+			this.indent--
+			this.printf("::%s_break::", switchLabel)
+			this.indent++
 		}
 
 	case *ast.TypeSwitchStmt:
@@ -876,11 +993,25 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 	}
 }
 
-func (this *Walker) walkCaseClause(node *ast.CaseClause, funcNode ast.Node) {
+func (this *Walker) tryPrintCaseClauseLabel(newline bool, node ast.Node) {
+	if newline {
+		this.println()
+	}
+	if str, ok := this.FallthroughCases[node]; ok {
+		this.indent--
+		this.printf("::%s::\n", str)
+		this.indent++
+	}
+}
+
+func (this *Walker) walkCaseClause(node *ast.CaseClause, funcNode ast.Node, switchLabel string) {
 	this.indent++
+	_, fallthroughCase := this.FallthroughCases[node]
 	for i, expr := range node.List {
 		if i > 0 {
 			this.printf("or ")
+		} else if fallthroughCase {
+			this.print(" __fall or ")
 		}
 		switch e := expr.(type) {
 		case *ast.BasicLit:
@@ -895,10 +1026,19 @@ func (this *Walker) walkCaseClause(node *ast.CaseClause, funcNode ast.Node) {
 	}
 
 	if node.List != nil {
-		this.println("then ")
+		this.println("then")
 	}
-	this.walkStmtList(node.Body, false, funcNode)
-	this.println()
+	if fallthroughCase {
+		this.println("__fall = false")
+	}
+	this.walkStmtList(node.Body, true, funcNode)
+	if switchLabel != "" {
+		if n := len(node.Body); n > 0 {
+			if _, ok := node.Body[n-1].(*ast.BranchStmt); !ok {
+				this.printf("goto %s_break\n", switchLabel)
+			}
+		}
+	}
 	this.indent--
 }
 

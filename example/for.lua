@@ -47,10 +47,22 @@ local forLoop6 = function()
         local i = 0
         while i < 3 do
             if i >= 1 then
-                goto xxx_continue_1
+                goto __continue
             end
             print(i)
-        ::xxx_continue_1::
+        ::__continue::
+            i = i + 1
+        end
+    end
+
+    do
+        local i = 0
+        while i < 3 do
+            if i >= 1 then
+                goto __continue_2
+            end
+            print(i)
+        ::__continue_2::
             i = i + 1
         end
     end

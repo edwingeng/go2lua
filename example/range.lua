@@ -18,11 +18,11 @@ local rangeMap2 = function()
 
     for k, v in pairs(m) do
         if k == "b" then
-            goto xxx_continue_1
+            goto __continue
         else
             print(k, v)
         end
-    ::xxx_continue_1::
+    ::__continue::
     end
 end
 

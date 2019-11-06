@@ -42,6 +42,13 @@ func forLoop6() {
 		}
 		println(i)
 	}
+
+	for i := 0; i < 3; i++ {
+		if i >= 1 {
+			continue
+		}
+		println(i)
+	}
 }
 
 func forLoop7() {

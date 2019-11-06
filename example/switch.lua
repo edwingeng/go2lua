@@ -10,11 +10,11 @@ local switch2 = function(n)
     do
         local switchTag = n
         if switchTag == 1 then 
-            print(1)
+            print("a", n)
         elseif switchTag == 2 then 
-            print(2)
+            print("b", n)
         else
-            print(n)
+            print("c", n)
         end
     end
 end
@@ -25,11 +25,11 @@ local switch3 = function(n)
     do
         local switchTag = n
         if switchTag == 1 or switchTag == 3 then 
-            print(1)
+            print("a", n)
         elseif switchTag == (a + b) then 
-            print(2)
+            print("b", n)
         else
-            print(n)
+            print("c", n)
         end
     end
 end

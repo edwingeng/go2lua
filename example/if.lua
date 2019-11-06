@@ -2,19 +2,19 @@
 
 If = function(n)
     if n == 0 then
-        print("a1:", 0)
+        print("a1:", n)
     end
 
     if n == 1 then
-        print("b1:", 1)
+        print("b1:", n)
     else
         print("b2:", n)
     end
 
     if n == 1 then
-        print("c1:", 1)
+        print("c1:", n)
     elseif n == 2 then
-        print("c2:", 2)
+        print("c2:", n)
     else
         print("c3:", n)
     end
@@ -37,11 +37,11 @@ If = function(n)
         print("e1:", n)
     else
         if n == 1 then
-            print("e2:", 1)
+            print("e2:", n)
         elseif n == 2 then
-            print("e3:", 2)
+            print("e3:", n)
         elseif n == 3 then
-            print("e4:", 3)
+            print("e4:", n)
         else
             print("e5:", n)
         end

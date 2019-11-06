@@ -2,19 +2,19 @@ package example
 
 func If(n int) {
 	if n == 0 {
-		println("a1:", 0)
+		println("a1:", n)
 	}
 
 	if n == 1 {
-		println("b1:", 1)
+		println("b1:", n)
 	} else {
 		println("b2:", n)
 	}
 
 	if n == 1 {
-		println("c1:", 1)
+		println("c1:", n)
 	} else if n == 2 {
-		println("c2:", 2)
+		println("c2:", n)
 	} else {
 		println("c3:", n)
 	}
@@ -37,11 +37,11 @@ func If(n int) {
 		println("e1:", n)
 	} else {
 		if n == 1 {
-			println("e2:", 1)
+			println("e2:", n)
 		} else if n == 2 {
-			println("e3:", 2)
+			println("e3:", n)
 		} else if n == 3 {
-			println("e4:", 3)
+			println("e4:", n)
 		} else {
 			println("e5:", n)
 		}

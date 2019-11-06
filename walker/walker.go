@@ -955,7 +955,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 					}
 				} else {
 					for _, name := range spec.Names {
-						if unicode.IsUpper(rune(name.Name[0])) {
+						if ast.IsExported(name.Name) {
 							upperNames = append(upperNames, name.Name)
 						} else {
 							lowerNames = append(lowerNames, name.Name)
@@ -991,8 +991,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			this.walkImpl(n.Recv, n)
 		}
 
-		first := n.Name.Name[0]
-		if first >= 'a' && first <= 'z' {
+		if !ast.IsExported(n.Name.Name) {
 			this.print("local ")
 		}
 

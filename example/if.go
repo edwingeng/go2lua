@@ -1,6 +1,6 @@
 package example
 
-func If(n int) {
+func If1(n int) {
 	if n == 0 {
 		println("a1:", n)
 	}
@@ -45,5 +45,16 @@ func If(n int) {
 		} else {
 			println("e5:", n)
 		}
+	}
+}
+
+func If2(n int) {
+	if x1 := n * 10; x1 > 10 {
+		println(x1)
+	}
+
+	x2 := 0
+	if x2 = n * 10; x2 > 10 {
+		println(x2)
 	}
 }

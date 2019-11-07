@@ -141,6 +141,8 @@ func (this *Parser) Output(dir string) {
 			}
 		}
 	}()
+
+	commonPrefix := this.commonPrefix()
 	for i := 0; i < 16; i++ {
 		wg.Add(1)
 		go func() {
@@ -167,6 +169,7 @@ func (this *Parser) Output(dir string) {
 				if err := ioutil.WriteFile(f4, w.BufferBytes(), 0644); err != nil {
 					panic(err)
 				}
+				fmt.Printf("- %s\n", f1[len(commonPrefix):])
 
 				if !SyntaxErrorDetected {
 					SyntaxErrorDetected = w.NumErrors > 0

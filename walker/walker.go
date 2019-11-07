@@ -666,8 +666,12 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 	case *ast.IfStmt:
 		if n.Init != nil {
+			this.println("do")
+			this.indent++
 			this.walkImpl(n.Init, funcNode)
+			this.println()
 		}
+
 		this.print("if ")
 		this.walkImpl(n.Cond, funcNode)
 
@@ -689,6 +693,12 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		}
 		if elif != nil {
 			delete(this.ElseIfs, elif)
+		}
+
+		if n.Init != nil {
+			this.indent--
+			this.println()
+			this.print("end")
 		}
 
 	case *ast.CaseClause:

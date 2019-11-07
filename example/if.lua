@@ -1,6 +1,6 @@
 -- package: example
 
-If = function(n)
+If1 = function(n)
     if n == 0 then
         print("a1:", n)
     end
@@ -44,6 +44,23 @@ If = function(n)
             print("e4:", n)
         else
             print("e5:", n)
+        end
+    end
+end
+
+If2 = function(n)
+    do
+        local x1 = n * 10
+        if x1 > 10 then
+            print(x1)
+        end
+    end
+
+    local x2 = 0
+    do
+        x2 = n * 10
+        if x2 > 10 then
+            print(x2)
         end
     end
 end

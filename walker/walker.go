@@ -12,23 +12,12 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"golang.org/x/tools/go/analysis"
 )
 
 var (
 	indentBytes = []byte("    ")
-)
-
-var (
-	go2LuaFuncMap = map[string]string{
-		"print":   "io.write",
-		"println": "print",
-	}
-
-	go2LuaOperMap = map[string]string{
-		`&&`: "and",
-		`||`: "or",
-		`!`:  "not",
-	}
 )
 
 type gotoLabelInfo struct {
@@ -37,7 +26,7 @@ type gotoLabelInfo struct {
 }
 
 type Walker struct {
-	Fset    *token.FileSet
+	Pass    *analysis.Pass
 	root    ast.Node
 	shadows map[token.Pos]int
 
@@ -59,9 +48,9 @@ type Walker struct {
 	FallthroughCases map[ast.Node]string
 }
 
-func NewWalker(fset *token.FileSet, node ast.Node, opts ...Option) *Walker {
+func NewWalker(pass *analysis.Pass, node ast.Node, opts ...Option) *Walker {
 	w := &Walker{
-		Fset:             fset,
+		Pass:             pass,
 		root:             node,
 		nextNums:         make(map[string]int),
 		funcScopeNames:   make(map[ast.Node]map[string]struct{}),
@@ -93,7 +82,7 @@ func (this *Walker) printIndent(blank bool) {
 	}
 
 	var c int
-	pos := this.Fset.Position(this.current.Pos())
+	pos := this.Pass.Fset.Position(this.current.Pos())
 	for i := pos.Offset; i >= 0; {
 		r, size := utf8.DecodeLastRune(this.fileData[:i])
 		i -= size
@@ -143,7 +132,7 @@ func (this *Walker) printf(format string, a ...interface{}) {
 func (this *Walker) printError(err error, node ast.Node) {
 	var buf bytes.Buffer
 	_, _ = fmt.Fprintf(&buf, "%+v\n", err.Error())
-	if err := ast.Fprint(&buf, this.Fset, node, nil); err != nil {
+	if err := ast.Fprint(&buf, this.Pass.Fset, node, nil); err != nil {
 		panic(err)
 	}
 	_, _ = os.Stderr.Write(buf.Bytes())
@@ -230,7 +219,7 @@ func (this *Walker) initialize() {
 					}
 				}
 				if forNode != nil {
-					n2 := this.Fset.Position(forNode.Pos()).Line
+					n2 := this.Pass.Fset.Position(forNode.Pos()).Line
 					if n2 == n1 {
 						this.ForShadows[forNode] = struct{}{}
 					}
@@ -342,7 +331,7 @@ func (this *Walker) initialize() {
 	})
 
 	var err error
-	file := this.Fset.File(this.root.Pos()).Name()
+	file := this.Pass.Fset.File(this.root.Pos()).Name()
 	this.fileData, err = ioutil.ReadFile(file)
 	if err != nil {
 		panic(err)
@@ -1069,7 +1058,7 @@ func (this *Walker) printVarDefinition(local bool, names []string, spec *ast.Val
 		}
 	} else {
 		this.print("= ")
-		defVal, err := defaultValue(spec.Type)
+		defVal, err := this.defaultValue(spec.Type)
 		if err != nil {
 			this.printError(err, spec.Type)
 		}
@@ -1082,27 +1071,27 @@ func (this *Walker) printVarDefinition(local bool, names []string, spec *ast.Val
 	}
 }
 
-func defaultValue(expr ast.Expr) (string, error) {
-	switch t := expr.(type) {
-	case *ast.Ident:
-		switch t.Name {
-		case "int8", "int16", "int32", "int64", "int", "uint8", "uint16", "uint32", "uint64", "uint":
-			return "0", nil
-		case "string":
-			return `""`, nil
-		case "bool":
-			return "false", nil
-		case "rune", "byte", "uintptr", "float32", "float64":
-			return "0", nil
-		case "complex64", "complex128":
-			return "", fmt.Errorf("unsupported data type: %s", t)
-		case "":
-			return "", errors.New("missing data type")
-		default:
+func (this *Walker) defaultValue(expr ast.Expr) (string, error) {
+	t := this.Pass.TypesInfo.Types[expr].Type
+	switch name := t.String(); name {
+	case "int8", "int16", "int32", "int64", "int", "uint8", "uint16", "uint32", "uint64", "uint":
+		return "0", nil
+	case "rune", "byte", "uintptr", "float32", "float64":
+		return "0", nil
+	case "string":
+		return `""`, nil
+	case "bool":
+		return "false", nil
+	case "complex64", "complex128":
+		return "", fmt.Errorf("unsupported data type: %s", t)
+	case "":
+		return "", errors.New("missing data type")
+	default:
+		if strings.HasPrefix(name, "*") {
+			return "nil", nil
+		} else {
 			return "{}", nil
 		}
-	default:
-		return "nil", nil
 	}
 }
 

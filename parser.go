@@ -88,9 +88,8 @@ func (this *Parser) Parse() error {
 	return err
 }
 
-func findShadows(pkg *packages.Package, syn *ast.File) map[token.Pos]int {
-	m := make(map[token.Pos]int)
-	pass := &analysis.Pass{
+func newPass(pkg *packages.Package, syn *ast.File) *analysis.Pass {
+	return &analysis.Pass{
 		Analyzer:   shadow.Analyzer,
 		Fset:       pkg.Fset,
 		Files:      []*ast.File{syn},
@@ -99,6 +98,11 @@ func findShadows(pkg *packages.Package, syn *ast.File) map[token.Pos]int {
 		TypesInfo:  pkg.TypesInfo,
 		TypesSizes: pkg.TypesSizes,
 	}
+}
+
+func findShadows(pkg *packages.Package, syn *ast.File) map[token.Pos]int {
+	m := make(map[token.Pos]int)
+	pass := newPass(pkg, syn)
 	shadowFlagOnce.Do(func() {
 		if err := shadow.Analyzer.Flags.Parse([]string{"-strict"}); err != nil {
 			panic(err)
@@ -142,6 +146,13 @@ func (this *Parser) Output(dir string) {
 		}
 	}()
 
+	replaceSuffix := func(str, suffix, replacement string) string {
+		if strings.HasSuffix(str, suffix) {
+			str = str[:len(str)-len(suffix)] + replacement
+		}
+		return str
+	}
+
 	commonPrefix := this.commonPrefix()
 	for i := 0; i < 16; i++ {
 		wg.Add(1)
@@ -158,18 +169,19 @@ func (this *Parser) Output(dir string) {
 					continue
 				}
 
+				pass := newPass(item.pkg, item.syn)
 				shadows := findShadows(item.pkg, item.syn)
-				w := walker.NewWalker(item.pkg.Fset, item.syn, walker.WithShadows(shadows))
+				w := walker.NewWalker(pass, item.syn, walker.WithShadows(shadows))
 				w.Walk()
 
 				runtime.Gosched()
 				f2 := filepath.Base(f1)
-				f3 := strings.TrimSuffix(f2, ".go") + ".lua"
+				f3 := replaceSuffix(f2, ".go", ".lua")
 				f4 := filepath.Join(dir, f3)
 				if err := ioutil.WriteFile(f4, w.BufferBytes(), 0644); err != nil {
 					panic(err)
 				}
-				fmt.Printf("- %s\n", f1[len(commonPrefix):])
+				fmt.Printf("- %s\n", replaceSuffix(f1[len(commonPrefix):], ".go", ".lua"))
 
 				if !SyntaxErrorDetected {
 					SyntaxErrorDetected = w.NumErrors > 0
@@ -204,7 +216,7 @@ func (this *Parser) PrintDetails(astTree, luaCode bool) {
 			}
 
 			if luaCode {
-				w := walker.NewWalker(pkg.Fset, syn)
+				w := walker.NewWalker(newPass(pkg, syn), syn)
 				w.Walk()
 
 				fmt.Println("==========", f1[len(commonPrefix):])

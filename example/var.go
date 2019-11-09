@@ -57,7 +57,5 @@ func var1() {
 	_ = myNumber7
 	_ = MyNumber8
 
-	_ = myString1
-	_ = myString2
-	_ = MyString3
+	_, _, _ = myString1, myString2, MyString3
 }

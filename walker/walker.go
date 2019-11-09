@@ -528,6 +528,17 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 	case *ast.AssignStmt:
 		if n.Tok == token.DEFINE {
 			this.Print("local ")
+		} else {
+			local := true
+			for _, v := range n.Lhs {
+				if x, ok := v.(*ast.Ident); !ok || x.Name != "_" {
+					local = false
+					break
+				}
+			}
+			if local {
+				this.Print("local ")
+			}
 		}
 		this.walkExprList(n.Lhs, funcNode)
 		this.Print(" = ")

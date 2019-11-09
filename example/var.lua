@@ -59,3 +59,46 @@ local var1 = function()
 
     local _, _, _ = myString1, myString2, MyString3
 end
+
+local var2 = function()
+    local myArray1 = {0, 0, 0}
+    local myArray2 = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
+
+    local mySlice1 = {}
+    local mySlice2 = {}
+
+    local foo1 = {String1 = "", Num1 = 0}
+    local foo2 = {Foo1 = {String1 = "", Num1 = 0}, String2 = "", Num2 = 0}
+    local foo3 = {string = "", int = 0}
+    local foo4 = {Num = 0, string = ""}
+
+    local ptr1 = undef
+    local ptr2 = undef
+    local ptr3 = undef
+    local ptr4 = undef
+    local ptr5 = undef
+    local ptr6 = undef
+    local ptr7 = undef
+
+    local fn1 = undef
+    local fn2 = undef
+    local fn3 = undef
+
+    local obj1 = undef
+    local obj2 = undef
+
+    local map1 = {}
+    local map2 = {}
+    local map3 = {}
+    local map4 = {}
+    local map5 = {}
+    local map6 = {}
+
+    local _, _ = myArray1, myArray2
+    local _, _ = mySlice1, mySlice2
+    local _, _, _, _ = foo1, foo2, foo3, foo4
+    local _, _, _, _, _, _, _ = ptr1, ptr2, ptr3, ptr4, ptr5, ptr6, ptr7
+    local _, _, _ = fn1, fn2, fn3
+    local _, _ = obj1, obj2
+    local _, _, _, _, _, _ = map1, map2, map3, map4, map5, map6
+end

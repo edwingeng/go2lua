@@ -998,7 +998,7 @@ func (this *Walker) printVarDefinition(local bool, names []string, spec *ast.Val
 }
 
 func (this *Walker) defaultValue(expr ast.Expr) (string, error) {
-	t := this.Pass.TypesInfo.Types[expr].Type
+	t := this.Pass.TypesInfo.Types[expr].Type.Underlying()
 	switch name := t.String(); name {
 	case "int8", "int16", "int32", "int64", "int", "uint8", "uint16", "uint32", "uint64", "uint":
 		return "0", nil

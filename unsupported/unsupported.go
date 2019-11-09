@@ -58,7 +58,7 @@ func checkUnsupportedTypeImpl(typ types.Type) error {
 	switch t := typ.Underlying().(type) {
 	case nil:
 	case *types.Basic:
-		if t.Info()|types.IsComplex != 0 {
+		if t.Info()&types.IsComplex != 0 {
 			return newError(t)
 		}
 	case *types.Array:

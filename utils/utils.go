@@ -45,7 +45,7 @@ func PrintErrors(pass *analysis.Pass, a ...ErrItem) {
 func DefaultValue(typ types.Type) string {
 	switch t := typ.Underlying().(type) {
 	case nil:
-		return "nil"
+		return "undef"
 
 	case *types.Basic:
 		switch t.Kind() {
@@ -92,7 +92,7 @@ func DefaultValue(typ types.Type) string {
 		return sb.String()
 
 	case *types.Pointer:
-		return "nil"
+		return "undef"
 
 	case *types.Tuple:
 		var sb strings.Builder
@@ -108,13 +108,13 @@ func DefaultValue(typ types.Type) string {
 		return sb.String()
 
 	case *types.Signature:
-		return "nil"
+		return "undef"
 
 	case *types.Interface:
-		return "nil"
+		return "undef"
 
 	case *types.Map:
-		return "nil"
+		return "undef"
 
 	case *types.Chan:
 		panic("IMPOSSIBLE")

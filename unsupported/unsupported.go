@@ -60,6 +60,8 @@ func checkUnsupportedTypeImpl(typ types.Type) error {
 	case *types.Basic:
 		if t.Info()&types.IsComplex != 0 {
 			return newError(t)
+		} else if t.Kind() == types.UnsafePointer {
+			return newError(t)
 		}
 	case *types.Array:
 		const maxLen = 64

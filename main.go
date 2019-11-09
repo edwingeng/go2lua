@@ -8,8 +8,8 @@ import (
 )
 
 func main() {
-	astTree := flag.Bool("astTree", false, "print ast trees for debug purpose")
 	outputDir := flag.String("outputDir", "", "the output directory")
+	astTree := flag.Bool("astTree", false, "print ast tree(s) for debug purpose")
 	filter := flag.String("filter", "", "file filter, for debug purpose")
 	flag.Parse()
 

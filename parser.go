@@ -53,32 +53,32 @@ func (this *Parser) commonPrefix() string {
 	for _, pkg := range this.pkgs {
 		for _, syn := range pkg.Syntax {
 			f1 := pkg.Fset.Position(syn.Package).Filename
-			allFiles = append(allFiles, f1)
+			allFiles = append(allFiles, filepath.Clean(f1))
 		}
 	}
+	if len(allFiles) <= 1 {
+		return ""
+	}
 
-	var leN int
-	for done := false; len(allFiles) > 1 && !done; {
-		a := strings.Split(allFiles[0], string(filepath.Separator))
-		for i := 1; i < len(a); i++ {
-			prefix := filepath.Join(a[:i]...)
-			for _, f := range allFiles {
-				if !strings.HasPrefix(f, prefix) {
-					done = true
-					break
-				}
-			}
-			leN = len(prefix) + 1
-			if a[0] == "" {
-				leN++
+	leN := 0
+	file0 := allFiles[0]
+outer:
+	for leN < len(file0) {
+		pos := strings.IndexRune(file0[leN:], filepath.Separator)
+		if pos < 0 {
+			break
+		}
+
+		str := file0[:leN+pos+1]
+		for _, f := range allFiles {
+			if !strings.HasPrefix(f, str) {
+				break outer
 			}
 		}
+		leN += pos + 1
 	}
 
-	if leN > 0 {
-		return allFiles[0][:leN]
-	}
-	return ""
+	return file0[:leN]
 }
 
 func (this *Parser) Parse() error {

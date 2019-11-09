@@ -984,39 +984,13 @@ func (this *Walker) printVarDefinition(local bool, names []string, spec *ast.Val
 		}
 	} else {
 		this.Print("= ")
-		defVal, err := this.defaultValue(spec.Type)
-		if err != nil {
-			this.printError(err, spec.Type)
-		}
+		typ := this.Pass.TypesInfo.Types[spec.Type].Type
+		defVal := utils.DefaultValue(typ)
 		for i := 0; i < leN; i++ {
 			if i > 0 {
 				this.Print(", ")
 			}
 			this.Print(defVal)
-		}
-	}
-}
-
-func (this *Walker) defaultValue(expr ast.Expr) (string, error) {
-	t := this.Pass.TypesInfo.Types[expr].Type.Underlying()
-	switch name := t.String(); name {
-	case "int8", "int16", "int32", "int64", "int", "uint8", "uint16", "uint32", "uint64", "uint":
-		return "0", nil
-	case "rune", "byte", "uintptr", "float32", "float64":
-		return "0", nil
-	case "string":
-		return `""`, nil
-	case "bool":
-		return "false", nil
-	case "complex64", "complex128":
-		return "", fmt.Errorf("unsupported data type: %s", t)
-	case "":
-		return "", errors.New("missing data type")
-	default:
-		if strings.HasPrefix(name, "*") {
-			return "nil", nil
-		} else {
-			return "{}", nil
 		}
 	}
 }

@@ -62,6 +62,10 @@ func checkUnsupportedTypeImpl(typ types.Type) error {
 			return newError(t)
 		}
 	case *types.Array:
+		const maxLen = 64
+		if t.Len() > maxLen {
+			return fmt.Errorf("the length of an array should not exceed %d", maxLen)
+		}
 	case *types.Slice:
 	case *types.Struct:
 	case *types.Pointer:
@@ -73,6 +77,7 @@ func checkUnsupportedTypeImpl(typ types.Type) error {
 		return newError(t)
 	case *types.Named:
 	default:
+		return newError(t)
 	}
 
 	return nil

@@ -178,7 +178,7 @@ func (this *Parser) Output(dir string) {
 				f2 := filepath.Base(f1)
 				f3 := replaceSuffix(f2, ".go", ".lua")
 				f4 := filepath.Join(dir, f3)
-				if err := ioutil.WriteFile(f4, w.BufferBytes(), 0644); err != nil {
+				if err := ioutil.WriteFile(f4, w.Buffer.Bytes(), 0644); err != nil {
 					panic(err)
 				}
 				fmt.Printf("- %s\n", replaceSuffix(f1[len(commonPrefix):], ".go", ".lua"))
@@ -221,7 +221,7 @@ func (this *Parser) PrintDetails(astTree, luaCode bool) {
 
 				fmt.Println("==========", f1[len(commonPrefix):])
 				fmt.Println()
-				fmt.Println(w.BufferString())
+				fmt.Println(w.Buffer.String())
 
 				if !SyntaxErrorDetected {
 					SyntaxErrorDetected = w.NumErrors > 0

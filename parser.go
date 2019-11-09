@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/edwingeng/go2lua/unsupported"
 	"github.com/edwingeng/go2lua/walker"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -85,7 +87,38 @@ func (this *Parser) Parse() error {
 	var err error
 	cfg := packages.Config{Mode: math.MaxInt64}
 	this.pkgs, err = packages.Load(&cfg, this.pkgPaths...)
-	return err
+	if err != nil {
+		return err
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var firstErr error
+	for _, pkg := range this.pkgs {
+		for _, syn := range pkg.Syntax {
+			wg.Add(1)
+			pkg, syn := pkg, syn
+			go func() {
+				defer wg.Done()
+				pass := newPass(pkg, syn)
+				runtime.Gosched()
+				err := unsupported.CheckUnsupported(pass)
+				if err != nil {
+					mu.Lock()
+					if firstErr == nil {
+						firstErr = err
+					}
+					mu.Unlock()
+				}
+			}()
+		}
+	}
+	wg.Wait()
+
+	if firstErr != nil {
+		return errors.New("unsupported feature detected")
+	}
+	return nil
 }
 
 func newPass(pkg *packages.Package, syn *ast.File) *analysis.Pass {

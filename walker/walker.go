@@ -8,10 +8,10 @@ import (
 	"go/ast"
 	"go/token"
 	"io/ioutil"
-	"os"
 	"strings"
 	"unicode"
 
+	"github.com/edwingeng/go2lua/utils"
 	"github.com/edwingeng/go2lua/walker/codeprinter"
 	"golang.org/x/tools/go/analysis"
 )
@@ -68,12 +68,7 @@ func NewWalker(pass *analysis.Pass, node ast.Node, opts ...Option) (w *Walker) {
 }
 
 func (this *Walker) printError(err error, node ast.Node) {
-	var buf bytes.Buffer
-	_, _ = fmt.Fprintf(&buf, "%+v\n", err.Error())
-	if err := ast.Fprint(&buf, this.Pass.Fset, node, nil); err != nil {
-		panic(err)
-	}
-	_, _ = os.Stderr.Write(buf.Bytes())
+	utils.PrintErrors(this.Pass, utils.NewErrItem(err, node))
 	this.NumErrors++
 }
 

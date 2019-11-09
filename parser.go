@@ -30,6 +30,7 @@ var (
 
 var (
 	rexShadow      = regexp.MustCompile(`shadows declaration at line (\d+)`)
+	rexSyntaxError = regexp.MustCompile(`(^[^:]+:\d+:\d+:)\s*(.*)`)
 	shadowFlagOnce sync.Once
 )
 
@@ -89,6 +90,24 @@ func (this *Parser) Parse() error {
 	this.pkgs, err = packages.Load(&cfg, this.pkgPaths...)
 	if err != nil {
 		return err
+	}
+
+	for _, pkg := range this.pkgs {
+		if len(pkg.Errors) > 0 {
+			SyntaxErrorDetected = true
+			for _, err := range pkg.Errors {
+				a := rexSyntaxError.FindStringSubmatch(err.Error())
+				if len(a) > 0 {
+					fmt.Printf("%s\n    %s\n", a[1], a[2])
+				} else {
+					fmt.Println(err.Error())
+				}
+			}
+		}
+	}
+	if SyntaxErrorDetected {
+		fmt.Println()
+		return errors.New("syntax error detected")
 	}
 
 	var wg sync.WaitGroup

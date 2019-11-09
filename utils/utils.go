@@ -34,7 +34,7 @@ func PrintErrors(pass *analysis.Pass, a ...ErrItem) {
 	var buf bytes.Buffer
 	for _, v := range a {
 		pos := pass.Fset.Position(v.Node.Pos())
-		_, _ = fmt.Fprintf(&buf, "%s [%d:%d]\n", pos.Filename, pos.Line, pos.Column)
+		_, _ = fmt.Fprintf(&buf, "%s:%d:%d\n", pos.Filename, pos.Line, pos.Column)
 		_, _ = fmt.Fprintf(&buf, "    %+v\n", strings.ReplaceAll(v.Err.Error(), "\n", "\n    "))
 	}
 	buf.WriteByte('\n')

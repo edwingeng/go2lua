@@ -23,7 +23,7 @@ func checkUnsupportedTypes(pass *analysis.Pass) error {
 
 	var total int
 	m := make(map[int]struct{})
-	var a []utils.ErrItem
+	var a []utils.NodeError
 	for e, tnv := range pass.TypesInfo.Types {
 		err := checkUnsupportedTypeImpl(tnv.Type)
 		if err != nil {
@@ -32,7 +32,7 @@ func checkUnsupportedTypes(pass *analysis.Pass) error {
 				continue
 			}
 			m[pos.Line] = struct{}{}
-			a = append(a, utils.NewErrItem(err, e))
+			a = append(a, utils.NewNodeError(err, e))
 			if total++; total > 10 {
 				break
 			}

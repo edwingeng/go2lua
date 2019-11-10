@@ -68,7 +68,7 @@ func NewWalker(pass *analysis.Pass, node ast.Node, opts ...Option) (w *Walker) {
 }
 
 func (this *Walker) printError(err error, node ast.Node) {
-	utils.PrintErrors(this.Pass, utils.NewErrItem(err, node))
+	utils.PrintErrors(this.Pass, utils.NewNodeError(err, node))
 	this.NumErrors++
 }
 

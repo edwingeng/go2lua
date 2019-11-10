@@ -10,19 +10,19 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-type ErrItem struct {
+type NodeError struct {
 	Err  error
 	Node ast.Node
 }
 
-func NewErrItem(err error, node ast.Node) ErrItem {
-	return ErrItem{
+func NewNodeError(err error, node ast.Node) NodeError {
+	return NodeError{
 		Err:  err,
 		Node: node,
 	}
 }
 
-func PrintErrors(pass *analysis.Pass, a ...ErrItem) {
+func PrintErrors(pass *analysis.Pass, a ...NodeError) {
 	for i := 0; i < len(a); i++ {
 		for j := i + 1; j < len(a); j++ {
 			if a[j].Node.Pos() > a[i].Node.Pos() {

@@ -1,4 +1,5 @@
 require "undef"
+show_slice_metatable = true
 local slice = require "slice"
 local inspect = require 'inspect'
 
@@ -9,6 +10,9 @@ local always = function(s, full, suffix)
     end
     if s == undef then
         error("undefined slice" .. suffix)
+    end
+    if getmetatable(s) ~= slice.mt then
+        error("getmetatable(s) ~= slice.mt" .. suffix)
     end
     local fields = {"data", "len", "off"}
     for _, f in ipairs(fields) do
@@ -70,6 +74,14 @@ local test_slice_fromArray = function()
             error("#s ~= i" .. suffix)
         end
     end
+
+    local s1a = slice.fromArray({1, 2, 3, 4, 5})
+    s1a[3] = slice.fromArray({7, 8, 9})
+    local arr = {1, 2, {7, 8, 9}, 4, 5}
+    local s1b = slice.fromArray(arr, true)
+    if inspect(s1a) ~= inspect(s1b) then
+        error("inspect(s1a) ~= inspect(s1b)")
+    end
 end
 
 local test_slice_toArray = function()
@@ -82,6 +94,9 @@ local test_slice_toArray = function()
         local s = slice.fromArray(a)
         always(s, true, suffix)
         local b = slice.toArray(s)
+        if b == nil then
+            error("b == nil")
+        end
         if #b ~= i then
             error("#b ~= i" .. suffix)
         end
@@ -90,6 +105,14 @@ local test_slice_toArray = function()
                 error("v ~= a[j]" .. string.format(". j: %d", j) .. suffix)
             end
         end
+    end
+
+    local s1a = slice.fromArray({1, 2, 3, 4, 5})
+    s1a[3] = slice.fromArray({7, 8, 9})
+    local s1b = slice.toArray(s1a, true)
+    local arr = {1, 2, {7, 8, 9}, 4, 5}
+    if inspect(s1b) ~= inspect(arr) then
+        error("inspect(s1b) ~= inspect(arr)")
     end
 end
 

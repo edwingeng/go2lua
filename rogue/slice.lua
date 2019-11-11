@@ -22,6 +22,10 @@ local slice_mt = {
     __metatable = false
 }
 
+if show_slice_metatable then
+    slice_mt.__metatable = nil
+end
+
 local slice_make = function(fnInit, len)
     len = len or 0
     if len > 0 then
@@ -36,13 +40,50 @@ local slice_make = function(fnInit, len)
     end
 end
 
-local slice_fromArray = function(a)
+local function slice_fromArray(a, deep, depth)
+    if depth > 99 then
+        error("depth > 99")
+    end
+
+    if deep then
+        local n = #a
+        for i = 1, n do
+            if type(a[i]) == "table" and getmetatable(a[i]) ~= slice_mt then
+                a[i] = slice_fromArray(a[i], true, depth + 1)
+            end
+        end
+    end
+
     local s = {data = a, len = #a, off = 0}
     return setmetatable(s, slice_mt)
 end
 
-local slice_toArray = function(s)
-    return s.data
+local function slice_toArray(s, deep, depth)
+    if depth > 99 then
+        error("depth > 99")
+    end
+
+    local a
+    local n = s.len
+    if s.off == 0 and n == #s.data then
+        a = s.data
+    else
+        a = {}
+        local j = s.off
+        for i = 1, n do
+            j = j + 1
+            a[i] = s.data[j]
+        end
+    end
+
+    if deep then
+        for i = 1, n do
+            if type(a[i]) == "table" and getmetatable(a[i]) == slice_mt then
+                a[i] = slice_toArray(a[i], true, depth + 1)
+            end
+        end
+    end
+    return a
 end
 
 local slice_append = function(s, v)
@@ -170,9 +211,10 @@ local slice_clone = function(s, start, eNd)
 end
 
 return {
+    mt = slice_mt,
     make = slice_make,
-    fromArray = slice_fromArray,
-    toArray = slice_toArray,
+    fromArray = function(s, deep) return slice_fromArray(s, deep, 1) end,
+    toArray = function(s, deep) return slice_toArray(s, deep, 1) end,
     append = slice_append,
     appendSlice = slice_appendSlice,
     slice = slice_slice,

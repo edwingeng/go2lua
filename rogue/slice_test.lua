@@ -178,6 +178,9 @@ local test_slice_slice = function()
     local s2a = slice.slice(s1b, 1, 1)
     always(s2a, true)
     equals(s2a, s1b)
+    if s2a.off ~= 0 then
+        error("s2b.off ~= 0")
+    end
 
     local s3a = slice.fromArray({1, 2, 3, 4, 5})
     always(s3a, true)
@@ -190,6 +193,9 @@ local test_slice_slice = function()
     local s4b = slice.fromArray({2, 3, 4, 5})
     always(s4b, true)
     equals(s4a, s4b)
+    if s4a.off ~= 1 then
+        error("s4a.off ~= 1")
+    end
 
     local s5a = slice.slice(s3a, nil, 4)
     always(s5a, false)
@@ -206,6 +212,9 @@ local test_slice_slice = function()
     if #s3a ~= 5 then
         error("#s3a ~= 5")
     end
+    if s6a.off ~= 1 then
+        error("s6a.off ~= 1")
+    end
 
     local s7a = slice.slice(s3a, 1, 6)
     always(s7a, false)
@@ -214,6 +223,13 @@ local test_slice_slice = function()
     local s8a = slice.slice(s3a, 6)
     always(s8a, false)
     equals(s8a, slice.fromArray({}))
+
+    local s9a = slice.slice(s6a, 2, 3)
+    always(s9a, false)
+    equals(s9a, slice.fromArray({3}))
+    if s9a.off ~= 2 then
+        error("s9a.off ~= 2")
+    end
 end
 
 local test_slice_copy = function()
@@ -303,6 +319,12 @@ local test_slice_clone = function()
     local s6b = slice.fromArray({2, 3, 4})
     always(s6b, true)
     equals(s6a, s6b)
+
+    local s7a = slice.slice(s2a, 2, 5)
+    always(s7a, false)
+    local s7b = slice.clone(s7a, 2)
+    always(s7b, true)
+    equals(s7b, slice.fromArray({3, 4}))
 end
 
 test_slice_make()

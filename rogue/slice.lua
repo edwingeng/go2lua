@@ -66,16 +66,19 @@ local slice_appendSlice = function(s, appendix)
             local n = appendix.len
             local x = {data = s.data, len = s.len + n, off = s.off}
             local j = s.len + s.off
-            for i = 1, n do
+            local w = n + appendix.off
+            for i = 1 + appendix.off, w do
                 j = j + 1
-                x.data[j] = appendix[i]
+                x.data[j] = appendix.data[i]
             end
             return setmetatable(x, slice_mt)
         else
             local a = {}
             local n = appendix.len
+            local j = appendix.off
             for i = 1, n do
-                a[i] = appendix[i]
+                j = j + 1
+                a[i] = appendix.data[j]
             end
             local x = {data = a, len = n, off = 0}
             return setmetatable(x, slice_mt)
@@ -116,13 +119,14 @@ local slice_copy = function(dst, src)
             if dstLen < srcLen then
                 n = dstLen
             end
+            local off1, off2 = dst.off, src.off
             if dst.data ~= src.data or dst.off <= src.off then
                 for i = 1, n do
-                    dst[i] = src[i]
+                    dst.data[i + off1] = src.data[i + off2]
                 end
             else
                 for i = n, 1, -1 do
-                    dst[i] = src[i]
+                    dst.data[i + off1] = src.data[i + off2]
                 end
             end
             return n
@@ -153,8 +157,9 @@ local slice_clone = function(s, start, eNd)
 
     local a = {}
     local j = eNd - start
+    local off = s.off
     for i = eNd - 1, start, -1 do
-        a[j] = s[i]
+        a[j] = s.data[i + off]
         j = j - 1
     end
     return setmetatable({data = a, len = eNd - start, off = 0}, slice_mt)

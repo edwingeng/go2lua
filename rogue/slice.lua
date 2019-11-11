@@ -41,6 +41,10 @@ local slice_fromArray = function(a)
     return setmetatable(s, slice_mt)
 end
 
+local slice_toArray = function(s)
+    return s.data
+end
+
 local slice_append = function(s, v)
     if s ~= undef then
         local x = {data = s.data, len = s.len + 1, off = s.off}
@@ -168,6 +172,7 @@ end
 return {
     make = slice_make,
     fromArray = slice_fromArray,
+    toArray = slice_toArray,
     append = slice_append,
     appendSlice = slice_appendSlice,
     slice = slice_slice,

@@ -72,6 +72,27 @@ local test_slice_fromArray = function()
     end
 end
 
+local test_slice_toArray = function()
+    for i = 0, 3 do
+        local suffix = string.format(", i: %d", i)
+        local a = {}
+        for j = 1, i do
+            table.insert(a, i)
+        end
+        local s = slice.fromArray(a)
+        always(s, true, suffix)
+        local b = slice.toArray(s)
+        if #b ~= i then
+            error("#b ~= i" .. suffix)
+        end
+        for j, v in ipairs(b) do
+            if v ~= a[j] then
+                error("v ~= a[j]" .. string.format(". j: %d", j) .. suffix)
+            end
+        end
+    end
+end
+
 local test_slice_append = function()
     local s1a = slice.append(undef, undef)
     always(s1a, true)
@@ -230,6 +251,15 @@ local test_slice_slice = function()
     if s9a.off ~= 2 then
         error("s9a.off ~= 2")
     end
+
+    local s10a = slice.appendSlice(slice.slice(s3a, nil, 3), slice.slice(s3a, 4))
+    always(s10a, false)
+    local s10b = slice.fromArray({1, 2, 4, 5})
+    always(s10b, true)
+    equals(s10a, s10b)
+    local s10c = slice.fromArray({1, 2, 4, 5, 5})
+    always(s10c, true)
+    equals(s3a, s10c)
 end
 
 local test_slice_copy = function()
@@ -329,6 +359,7 @@ end
 
 test_slice_make()
 test_slice_fromArray()
+test_slice_toArray()
 test_slice_append()
 test_slice_appendSlice()
 test_slice_slice()

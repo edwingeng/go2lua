@@ -114,6 +114,13 @@ local test_slice_toArray = function()
     if inspect(s1b) ~= inspect(arr) then
         error("inspect(s1b) ~= inspect(arr)")
     end
+
+    local s2a = slice.slice(s1a, 3)
+    local s2b = slice.toArray(s2a, true)
+    arr = {{7, 8, 9}, 4, 5}
+    if inspect(s2b) ~= inspect(arr) then
+        error("inspect(s2b) ~= inspect(arr)")
+    end
 end
 
 local test_slice_append = function()

@@ -1,34 +1,171 @@
-slice_mt = function(data)
-    return {
-        __len = function(s)
-            return s.len
-        end,
-        __index = function(s, i)
-            if i >= s.len then
-                error(string.format("index out of range [%d] with length %d", i, s.len))
-            end
-            return data[i]
-        end,
-        __newindex = function(s, i, v)
-            if i < s.len then
-                data[i] = v
-            else
-                data[s.len] = v
-                s.len = s.len + 1
-            end
-        end,
-        __metatable = false
-    }
-end
+local slice_mt = {
+    __len = function(s)
+        return s.len
+    end,
+    __index = function(s, i)
+        if i <= s.len then
+            return s.data[i + s.off]
+        end
+        error(string.format("index out of range [%d] with length %d", i, s.len))
+    end,
+    __newindex = function(s, i, v)
+        local n = s.len
+        if i <= n then
+            s.data[i + s.off] = v
+        elseif i == n + 1 then
+            s.len = i
+            s.data[i + s.off] = v
+        else
+            error(string.format("unexpected newindex [%d] with length %d", i, s.len))
+        end
+    end,
+    __metatable = false
+}
 
-slice_make = function(len, fnInit)
+local slice_make = function(fnInit, len)
+    len = len or 0
     if len > 0 then
-        local data = fnInit(len)
-        local x = {data = data, len = len}
-        return setmetatable(x, slice_mt(data))
+        local a = fnInit(len)
+        if a == nil then
+            error("nil slice data")
+        end
+        local s = {data = a, len = len, off = 0}
+        return setmetatable(s, slice_mt)
     else
-        local data = {}
-        local x = {data = data, len = 0}
-        return setmetatable(x, slice_mt(data))
+        return setmetatable({data = {}, len = 0, off = 0}, slice_mt)
     end
 end
+
+local slice_fromArray = function(a)
+    local s = {data = a, len = #a, off = 0}
+    return setmetatable(s, slice_mt)
+end
+
+local slice_append = function(s, v)
+    if s ~= undef then
+        local x = {data = s.data, len = s.len + 1, off = s.off}
+        x.data[x.len + x.off] = v
+        return setmetatable(x, slice_mt)
+    else
+        local a = {v}
+        local x = {data = a, len = 1, off = 0}
+        return setmetatable(x, slice_mt)
+    end
+end
+
+local slice_appendSlice = function(s, appendix)
+    if appendix == undef then
+        if s ~= undef then
+            local x = {data = s.data, len = s.len, off = s.off}
+            return setmetatable(x, slice_mt)
+        else
+            return setmetatable({data = {}, len = 0, off = 0}, slice_mt)
+        end
+    else
+        if s ~= undef then
+            local n = appendix.len
+            local x = {data = s.data, len = s.len + n, off = s.off}
+            local j = s.len + s.off
+            for i = 1, n do
+                j = j + 1
+                x.data[j] = appendix[i]
+            end
+            return setmetatable(x, slice_mt)
+        else
+            local a = {}
+            local n = appendix.len
+            for i = 1, n do
+                a[i] = appendix[i]
+            end
+            local x = {data = a, len = n, off = 0}
+            return setmetatable(x, slice_mt)
+        end
+    end
+end
+
+local slice_slice = function(s, start, eNd)
+    if s == undef then
+        return setmetatable({data = {}, len = 0, off = 0}, slice_mt)
+    end
+
+    local n = s.len
+    local beyond = n + 1
+    start = start or 1
+    eNd = eNd or beyond
+    if start > beyond then
+        error(string.format("'start' out of range [%d] with length %d, beyond %d", start, n, beyond))
+    end
+    if eNd > beyond then
+        error(string.format("'eNd' out of range [%d] with length %d, beyond %d", eNd, n, beyond))
+    end
+    if eNd < start then
+        error(string.format("invalid 'eNd': %d < %d", eNd, start))
+    end
+
+    local x = {data = s.data, len = eNd - start, off = s.off + start - 1}
+    return setmetatable(x, slice_mt)
+end
+
+local slice_copy = function(dst, src)
+    if src == undef or src.len == 0 then
+        return 0
+    else
+        if dst ~= undef then
+            local dstLen, srcLen = dst.len, src.len
+            local n = srcLen
+            if dstLen < srcLen then
+                n = dstLen
+            end
+            if dst.data ~= src.data or dst.off <= src.off then
+                for i = 1, n do
+                    dst[i] = src[i]
+                end
+            else
+                for i = n, 1, -1 do
+                    dst[i] = src[i]
+                end
+            end
+            return n
+        else
+            return 0
+        end
+    end
+end
+
+local slice_clone = function(s, start, eNd)
+    if s == undef then
+        return undef
+    end
+
+    local n = s.len
+    local beyond = n + 1
+    start = start or 1
+    eNd = eNd or beyond
+    if start > beyond then
+        error(string.format("'start' out of range [%d] with length %d, beyond %d", start, n, beyond))
+    end
+    if eNd > beyond then
+        error(string.format("'eNd' out of range [%d] with length %d, beyond %d", eNd, n, beyond))
+    end
+    if eNd < start then
+        error(string.format("invalid 'eNd': %d < %d", eNd, start))
+    end
+
+    local a = {}
+    local j = eNd - start
+    for i = eNd - 1, start, -1 do
+        a[j] = s[i]
+        j = j - 1
+    end
+    return setmetatable({data = a, len = eNd - start, off = 0}, slice_mt)
+end
+
+return {
+    make = slice_make,
+    fromArray = slice_fromArray,
+    append = slice_append,
+    appendSlice = slice_appendSlice,
+    slice = slice_slice,
+    copy = slice_copy,
+    clone = slice_clone,
+}

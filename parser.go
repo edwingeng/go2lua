@@ -25,10 +25,6 @@ import (
 )
 
 var (
-	SyntaxErrorDetected bool
-)
-
-var (
 	rexShadow      = regexp.MustCompile(`shadows declaration at line (\d+)`)
 	rexSyntaxError = regexp.MustCompile(`(^[^:]+:\d+:\d+:)\s*(.*)`)
 	shadowFlagOnce sync.Once
@@ -37,6 +33,8 @@ var (
 type Parser struct {
 	pkgPaths   []string
 	fileFilter func(file string) bool
+
+	ErrorOccurred bool
 
 	pkgs []*packages.Package
 }
@@ -94,7 +92,7 @@ func (this *Parser) Parse() error {
 
 	for _, pkg := range this.pkgs {
 		if len(pkg.Errors) > 0 {
-			SyntaxErrorDetected = true
+			this.ErrorOccurred = true
 			for _, err := range pkg.Errors {
 				a := rexSyntaxError.FindStringSubmatch(err.Error())
 				if len(a) > 0 {
@@ -105,7 +103,7 @@ func (this *Parser) Parse() error {
 			}
 		}
 	}
-	if SyntaxErrorDetected {
+	if this.ErrorOccurred {
 		fmt.Println()
 		return errors.New("syntax error detected")
 	}
@@ -236,8 +234,8 @@ func (this *Parser) Output(dir string) {
 				}
 				fmt.Printf("- %s\n", replaceSuffix(f1[len(commonPrefix):], ".go", ".lua"))
 
-				if !SyntaxErrorDetected {
-					SyntaxErrorDetected = w.NumErrors > 0
+				if !this.ErrorOccurred {
+					this.ErrorOccurred = w.NumErrors > 0
 				}
 			}
 		}()
@@ -276,8 +274,8 @@ func (this *Parser) PrintDetails(astTree, luaCode bool) {
 				fmt.Println()
 				fmt.Println(w.Buffer.String())
 
-				if !SyntaxErrorDetected {
-					SyntaxErrorDetected = w.NumErrors > 0
+				if !this.ErrorOccurred {
+					this.ErrorOccurred = w.NumErrors > 0
 				}
 			}
 		}

@@ -3,6 +3,7 @@ package unsupported
 import (
 	"fmt"
 	"go/types"
+	"sort"
 
 	"github.com/edwingeng/go2lua/utils"
 	"golang.org/x/tools/go/analysis"
@@ -21,17 +22,23 @@ func checkUnsupportedTypes(pass *analysis.Pass) error {
 		return nil
 	}
 
+	ordered := orderedTypes(make([]*typeWithPos, 0, len(pass.TypesInfo.Types)))
+	for e := range pass.TypesInfo.Types {
+		ordered = append(ordered, newTypeWithPos(pass, e))
+	}
+	sort.Sort(ordered)
+
 	var total int
 	m := make(map[int]struct{})
 	var a []utils.NodeError
-	for e, tnv := range pass.TypesInfo.Types {
+	for _, v := range ordered {
+		e, tnv := v.typ, pass.TypesInfo.Types[v.typ]
 		err := checkUnsupportedTypeImpl(tnv.Type)
 		if err != nil {
-			pos := pass.Fset.Position(e.Pos())
-			if _, ok := m[pos.Line]; ok {
+			if _, ok := m[v.pos.Line]; ok {
 				continue
 			}
-			m[pos.Line] = struct{}{}
+			m[v.pos.Line] = struct{}{}
 			a = append(a, utils.NewNodeError(err, e))
 			if total++; total > 10 {
 				break
@@ -47,7 +54,8 @@ func checkUnsupportedTypes(pass *analysis.Pass) error {
 }
 
 func checkUnsupportedTypeImpl(typ types.Type) error {
-	newError := func(t types.Type) error {
+	newError := func() error {
+		t := typ.Underlying()
 		if typ.String() != t.String() {
 			return fmt.Errorf("unsupported data type: %s. underlying: %s", typ.String(), t.String())
 		} else {
@@ -59,9 +67,9 @@ func checkUnsupportedTypeImpl(typ types.Type) error {
 	case nil:
 	case *types.Basic:
 		if t.Info()&types.IsComplex != 0 {
-			return newError(t)
+			return newError()
 		} else if t.Kind() == types.UnsafePointer {
-			return newError(t)
+			return newError()
 		}
 	case *types.Array:
 		const maxLen = 64
@@ -71,15 +79,56 @@ func checkUnsupportedTypeImpl(typ types.Type) error {
 	case *types.Slice:
 	case *types.Struct:
 	case *types.Pointer:
+		return checkUnsupportedPointers(t)
 	case *types.Tuple:
 	case *types.Signature:
 	case *types.Interface:
 	case *types.Map:
 	case *types.Chan:
-		return newError(t)
+		return newError()
 	case *types.Named:
+		panic("IMPOSSIBLE")
 	default:
-		return newError(t)
+		return newError()
+	}
+
+	return nil
+}
+
+func checkUnsupportedPointers(typ *types.Pointer) error {
+	newError := func() error {
+		t := typ.Underlying()
+		if typ.String() != t.String() {
+			return fmt.Errorf("unsupported pointer type: %s. underlying: %s", typ.String(), t.String())
+		} else {
+			return fmt.Errorf("unsupported pointer type: %s", t.String())
+		}
+	}
+
+	switch typ.Elem().Underlying().(type) {
+	case nil:
+	case *types.Basic:
+		return newError()
+	case *types.Array:
+		return newError()
+	case *types.Slice:
+		return newError()
+	case *types.Struct:
+	case *types.Pointer:
+		return newError()
+	case *types.Tuple:
+	case *types.Signature:
+		return newError()
+	case *types.Interface:
+		return newError()
+	case *types.Map:
+		return newError()
+	case *types.Chan:
+		return newError()
+	case *types.Named:
+		return newError()
+	default:
+		return newError()
 	}
 
 	return nil

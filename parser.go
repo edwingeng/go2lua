@@ -130,12 +130,13 @@ func (this *Parser) Parse() error {
 					mu.Unlock()
 				}
 			}()
+			break
 		}
 	}
 	wg.Wait()
 
 	if firstErr != nil {
-		return errors.New("unsupported feature detected")
+		return errors.New("unsupported feature(s) detected")
 	}
 	return nil
 }

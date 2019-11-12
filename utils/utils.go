@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/token"
 	"os"
 	"strings"
 
@@ -23,14 +24,6 @@ func NewNodeError(err error, node ast.Node) NodeError {
 }
 
 func PrintErrors(pass *analysis.Pass, a ...NodeError) {
-	for i := 0; i < len(a); i++ {
-		for j := i + 1; j < len(a); j++ {
-			if a[j].Node.Pos() > a[i].Node.Pos() {
-				a[i], a[j] = a[j], a[i]
-			}
-		}
-	}
-
 	var buf bytes.Buffer
 	for _, v := range a {
 		pos := pass.Fset.Position(v.Node.Pos())
@@ -39,4 +32,15 @@ func PrintErrors(pass *analysis.Pass, a ...NodeError) {
 	}
 	buf.WriteByte('\n')
 	_, _ = os.Stderr.Write(buf.Bytes())
+}
+
+func PositionLess(p1, p2 token.Position) bool {
+	if p1.Filename < p2.Filename {
+		return true
+	} else if p1.Filename == p2.Filename {
+		if p1.Offset < p2.Offset {
+			return true
+		}
+	}
+	return false
 }

@@ -91,13 +91,7 @@ func var2() {
 		string
 	}
 
-	var ptr1 *int
-	var ptr2 **int
-	var ptr3 *string
 	var ptr4 *Foo1
-	var ptr5 *func()
-	var ptr6 *[]int
-	var ptr7 *map[string]int
 
 	var fn1 func()
 	var fn2 func(int)
@@ -118,7 +112,7 @@ func var2() {
 	_, _ = myArray1, myArray2
 	_, _ = mySlice1, mySlice2
 	_, _, _, _ = foo1, foo2, foo3, foo4
-	_, _, _, _, _, _, _ = ptr1, ptr2, ptr3, ptr4, ptr5, ptr6, ptr7
+	_ = ptr4
 	_, _, _ = fn1, fn2, fn3
 	_, _ = obj1, obj2
 	_, _, _, _, _, _ = map1, map2, map3, map4, map5, map6

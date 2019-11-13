@@ -1,5 +1,5 @@
 require "undef"
-show_slice_metatable = true
+expose_slice_metatable = true
 local slice = require "slice"
 local inspect = require 'inspect'
 

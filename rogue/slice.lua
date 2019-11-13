@@ -36,7 +36,7 @@ local slice_mt = {
     __metatable = false
 }
 
-if show_slice_metatable then
+if expose_slice_metatable then
     slice_mt.__metatable = nil
 end
 

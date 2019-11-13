@@ -15,6 +15,7 @@ local switch2 = function(n)
         elseif __switch == 2 then
             print("b", n)
         else
+            -- default
             print("c", n)
         end
     until true
@@ -31,6 +32,7 @@ local switch3 = function(n)
         elseif __switch == a + b then
             print("b", n)
         else
+            -- default
             print("c", n)
         end
     until true
@@ -81,6 +83,7 @@ local switch4 = function(n)
 
     ::__case_6::
         do
+            -- default
             __fall = false
             print("f", n)
             __fall = true
@@ -134,6 +137,7 @@ local switch5 = function(n)
 
     ::__case_6::
         do
+            -- default
             __fall = false
             print("f", n)
             __fall = true

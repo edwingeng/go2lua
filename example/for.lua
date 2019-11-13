@@ -138,6 +138,7 @@ local forLoop11 = function()
                 elseif __switch == 2 then
                     print("a", i)
                 else
+                    -- default
                     goto outer_break
                 end
             until true

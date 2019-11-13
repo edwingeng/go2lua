@@ -1019,6 +1019,9 @@ func (this *Walker) printCaseClauseLabel(newline bool, node ast.Node) {
 
 func (this *Walker) walkCaseClause(node *ast.CaseClause, hasTag bool, switchLabel, caseLabel string, funcNode ast.Node) {
 	this.Indent++
+	if node.List == nil {
+		this.Println("-- default")
+	}
 	_, fallthroughCase := this.FallthroughCases[node]
 	for i, expr := range node.List {
 		if i > 0 {

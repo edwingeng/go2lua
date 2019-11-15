@@ -6,9 +6,12 @@ var (
 		"println": "print",
 	}
 
-	go2LuaOperMap = map[string]string{
-		`&&`: "and",
-		`||`: "or",
-		`!`:  "not",
+	go2LuaBinaryOperMap = map[string]string{
+		`&&`: " and ",
+		`||`: " or ",
+		`!`:  " not ",
+		"^":  " ~ ",
+		"!=": " ~= ",
+		"&^": " & ~",
 	}
 )

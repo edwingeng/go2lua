@@ -431,11 +431,24 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		}
 
 	case *ast.CallExpr:
-		this.walkImpl(n.Fun, funcNode)
+		bConvert := false
+		if len(n.Args) == 1 {
+			if f, ok := n.Fun.(*ast.Ident); ok {
+				fType := this.Pass.TypesInfo.Types[f]
+				if fType.IsType() {
+					bConvert = true
+				}
+			}
+		}
+		if !bConvert {
+			this.walkImpl(n.Fun, funcNode)
+			this.Print("(")
+		}
 
-		this.Print("(")
 		this.walkExprList(n.Args, funcNode)
-		this.Print(")")
+		if !bConvert {
+			this.Print(")")
+		}
 
 	case *ast.StarExpr:
 		this.walkImpl(n.X, funcNode)
@@ -466,8 +479,8 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 	case *ast.BinaryExpr:
 		this.walkImpl(n.X, funcNode)
-		if str, ok := go2LuaOperMap[n.Op.String()]; ok {
-			this.Printf(" %s ", str)
+		if str, ok := go2LuaBinaryOperMap[n.Op.String()]; ok {
+			this.Print(str)
 		} else {
 			this.Printf(" %s ", n.Op)
 		}

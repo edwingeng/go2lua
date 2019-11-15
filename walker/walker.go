@@ -184,7 +184,7 @@ func (this *Walker) initialize() {
 				}
 				if loopNode == nil {
 					this.printError(fmt.Errorf("unexpected token: %s", n.Tok), node)
-					break
+					return true
 				}
 				if _, ok := this.ContinueLabels[loopNode]; !ok {
 					if loopNodeLabel == "" {
@@ -215,11 +215,11 @@ func (this *Walker) initialize() {
 				}
 				if err != nil {
 					this.printError(err, n)
-					break
+					return true
 				}
 				if loopNode == nil {
 					this.printError(fmt.Errorf("unexpected token: %s", n.Tok), node)
-					break
+					return true
 				}
 				switch n.Tok {
 				case token.BREAK:
@@ -395,7 +395,9 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		if n.Type != nil {
 			this.walkImpl(n.Type, funcNode)
 		}
+		this.Print("{")
 		this.walkExprList(n.Elts, funcNode)
+		this.Print("}")
 
 	case *ast.ParenExpr:
 		this.walkImpl(n.X, funcNode)
@@ -439,6 +441,27 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.walkImpl(n.X, funcNode)
 
 	case *ast.UnaryExpr:
+		switch n.Op {
+		case token.ADD:
+			// Ignore
+		case token.SUB:
+			this.Print("-")
+		case token.NOT:
+			this.Print("not ")
+		case token.XOR:
+			this.Print("~")
+		case token.MUL:
+			this.printError(fmt.Errorf("unexpected unary op: %v", n.Op), n)
+			return
+		case token.AND:
+			// Ignore
+		case token.ARROW:
+			this.printError(fmt.Errorf("unexpected unary op: %v", n.Op), n)
+			return
+		default:
+			this.printError(fmt.Errorf("unexpected unary op: %v", n.Op), n)
+			return
+		}
 		this.walkImpl(n.X, funcNode)
 
 	case *ast.BinaryExpr:
@@ -571,6 +594,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		case token.GOTO:
 			if n.Label == nil {
 				this.printError(errors.New("missing label"), node)
+				return
 			} else {
 				this.Printf("goto %s", n.Label)
 			}
@@ -582,6 +606,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 				this.Printf("goto %s", label)
 			} else {
 				this.printError(errors.New("unexpected label"), node)
+				return
 			}
 		}
 

@@ -41,3 +41,10 @@ local operator3 = function(n1, n2)
     local _ = n1 + n2 + n1 + n2 + n1
     local _ = n1 * n2 + n1 / n2 + n1 % n2 + n1 & n2
 end
+
+local operator4 = function(str1, str2, b1, b2, r1, r2)
+    local _ = "x" .. "y"
+    local _ = str1 .. str2
+    local _ = "x" .. str1 .. "y"
+    local _ = str1 .. "x" .. str2
+end

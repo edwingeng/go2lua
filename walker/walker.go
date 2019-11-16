@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"go/types"
 	"io/ioutil"
 	"strings"
 	"unicode"
@@ -481,11 +482,25 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 	case *ast.BinaryExpr:
 		this.printBinarySubexpr(n.X, n, funcNode)
-		if str, ok := go2LuaBinaryOperMap[n.Op.String()]; ok {
+
+		if n.Op == token.ADD {
+			typ := this.Pass.TypesInfo.Types[n.X].Type.Underlying()
+			if t, ok := typ.(*types.Basic); ok {
+				switch t.Kind() {
+				case types.String, types.UntypedString:
+					this.Print(" .. ")
+				default:
+					this.Print(" + ")
+				}
+			} else {
+				this.Print(" + ")
+			}
+		} else if str, ok := go2LuaBinaryOperMap[n.Op.String()]; ok {
 			this.Print(str)
 		} else {
 			this.Printf(" %s ", n.Op)
 		}
+
 		this.printBinarySubexpr(n.Y, n, funcNode)
 
 	case *ast.KeyValueExpr:

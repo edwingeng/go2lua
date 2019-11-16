@@ -1124,7 +1124,19 @@ func (this *Walker) walkCaseClause(node *ast.CaseClause, hasTag bool, switchLabe
 }
 
 func (this *Walker) printBinarySubexpr(e ast.Expr, n *ast.BinaryExpr, funcNode ast.Node) {
-	this.walkImpl(e, funcNode)
+	var bAddParen bool
+	if expr, ok := e.(*ast.BinaryExpr); ok {
+		if utils.LuaOpPrecedenceFromGoOp(expr.Op) < utils.LuaOpPrecedenceFromGoOp(n.Op) {
+			bAddParen = true
+		}
+	}
+	if bAddParen {
+		this.Print("(")
+		this.walkImpl(e, funcNode)
+		this.Print(")")
+	} else {
+		this.walkImpl(e, funcNode)
+	}
 }
 
 type Option func(w *Walker)

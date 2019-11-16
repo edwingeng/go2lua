@@ -48,3 +48,11 @@ func operator4(str1, str2 string, b1, b2 byte, r1, r2 rune) {
 	_ = "x" + str1 + "y"
 	_ = str1 + "x" + str2
 }
+
+func operator5(n1, n2 uint32) {
+	_ = n1 | n2 ^ n2
+	_ = n1 | n2 + n1 | n2
+	_ = n1 + n2 | n1 + n2
+	_ = n1 | n2 ^ n1
+	_ = n1<<n2 + n1<<n2*n2>>n1
+}

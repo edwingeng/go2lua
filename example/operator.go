@@ -31,3 +31,13 @@ func operator2(n1, n2 int, b1, b2 bool) {
 	_ = b1 && b2
 	_ = b1 || b2
 }
+
+func operator3(n1, n2 int) {
+	_ = n1*n2 + n1/n2
+	_ = (n1 * n2) + (n1 / n2)
+	_ = n1 * (n2 + n1) / n2
+	_ = (n1 * n2) + (n1/n2)*(n1+n2)
+	_ = ((n1 * n2) + (n1 / n2)) * (n1 + n2)
+	_ = n1 + n2 + n1 + n2 + n1
+	_ = n1*n2 + n1/n2 + n1%n2 + n1&n2
+}

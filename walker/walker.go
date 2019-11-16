@@ -400,7 +400,9 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.Print("}")
 
 	case *ast.ParenExpr:
+		this.Print("(")
 		this.walkImpl(n.X, funcNode)
+		this.Print(")")
 
 	case *ast.SelectorExpr:
 		this.walkImpl(n.X, funcNode)
@@ -478,13 +480,13 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.walkImpl(n.X, funcNode)
 
 	case *ast.BinaryExpr:
-		this.walkImpl(n.X, funcNode)
+		this.printBinarySubexpr(n.X, n, funcNode)
 		if str, ok := go2LuaBinaryOperMap[n.Op.String()]; ok {
 			this.Print(str)
 		} else {
 			this.Printf(" %s ", n.Op)
 		}
-		this.walkImpl(n.Y, funcNode)
+		this.printBinarySubexpr(n.Y, n, funcNode)
 
 	case *ast.KeyValueExpr:
 		this.walkImpl(n.Key, funcNode)
@@ -1104,6 +1106,10 @@ func (this *Walker) walkCaseClause(node *ast.CaseClause, hasTag bool, switchLabe
 		}
 	}
 	this.Indent--
+}
+
+func (this *Walker) printBinarySubexpr(e ast.Expr, n *ast.BinaryExpr, funcNode ast.Node) {
+	this.walkImpl(e, funcNode)
 }
 
 type Option func(w *Walker)

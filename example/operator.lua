@@ -31,3 +31,13 @@ local operator2 = function(n1, n2, b1, b2)
     local _ = b1 and b2
     local _ = b1 or b2
 end
+
+local operator3 = function(n1, n2)
+    local _ = n1 * n2 + n1 / n2
+    local _ = (n1 * n2) + (n1 / n2)
+    local _ = n1 * (n2 + n1) / n2
+    local _ = (n1 * n2) + (n1 / n2) * (n1 + n2)
+    local _ = ((n1 * n2) + (n1 / n2)) * (n1 + n2)
+    local _ = n1 + n2 + n1 + n2 + n1
+    local _ = n1 * n2 + n1 / n2 + n1 % n2 + n1 & n2
+end

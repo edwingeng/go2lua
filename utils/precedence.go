@@ -4,6 +4,10 @@ import (
 	"go/token"
 )
 
+const (
+	LuaOpPrecedence_Add = 8
+)
+
 func LuaOpPrecedenceFromGoOp(op token.Token) int {
 	switch op {
 	case token.LOR:
@@ -21,7 +25,7 @@ func LuaOpPrecedenceFromGoOp(op token.Token) int {
 	case token.SHL, token.SHR:
 		return 7
 	case token.ADD, token.SUB:
-		return 8
+		return LuaOpPrecedence_Add
 	case token.MUL, token.QUO, token.REM:
 		return 9
 	default:

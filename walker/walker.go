@@ -9,6 +9,7 @@ import (
 	"go/token"
 	"go/types"
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -381,7 +382,17 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		}
 
 	case *ast.BasicLit:
-		this.Print(n.Value)
+		switch n.Kind {
+		case token.CHAR:
+			for i, r := range n.Value {
+				if i == 1 {
+					this.Print(int(r))
+					break
+				}
+			}
+		default:
+			this.Print(n.Value)
+		}
 
 	case *ast.Ellipsis:
 		if n.Elt != nil {
@@ -410,9 +421,30 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.walkImpl(n.Sel, funcNode)
 
 	case *ast.IndexExpr:
+		typ := this.Pass.TypesInfo.Types[n.X].Type
+		if t, ok := typ.Underlying().(*types.Basic); ok {
+			if t.Kind() == types.String {
+				this.Print("string.byte(")
+				this.walkImpl(n.X, funcNode)
+				this.Print(", ")
+				this.printPlusOneIndex(n, funcNode)
+				this.Print(")")
+				break
+			} else {
+				panic("IMPOSSIBLE")
+			}
+		}
+
 		this.walkImpl(n.X, funcNode)
 		this.Print("[")
-		this.walkImpl(n.Index, funcNode)
+		switch typ.Underlying().(type) {
+		case *types.Slice:
+			this.printPlusOneIndex(n, funcNode)
+		case *types.Array:
+			this.printPlusOneIndex(n, funcNode)
+		default:
+			this.walkImpl(n.Index, funcNode)
+		}
 		this.Print("]")
 
 	case *ast.SliceExpr:
@@ -443,9 +475,20 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 				}
 			}
 		}
+
 		if !bConvert {
 			this.walkImpl(n.Fun, funcNode)
 			this.Print("(")
+		} else if ident, ok := n.Fun.(*ast.Ident); ok {
+			if ident.Name == "string" {
+				typ := this.Pass.TypesInfo.Types[n.Args[0]].Type
+				if t, ok := typ.Underlying().(*types.Basic); ok && t.Info()&types.IsInteger != 0 {
+					this.Print("utf8.char(")
+					this.walkExprList(n.Args, funcNode)
+					this.Print(")")
+					break
+				}
+			}
 		}
 
 		this.walkExprList(n.Args, funcNode)
@@ -484,8 +527,8 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.printBinarySubexpr(n.X, n, funcNode)
 
 		if n.Op == token.ADD {
-			typ := this.Pass.TypesInfo.Types[n.X].Type.Underlying()
-			if t, ok := typ.(*types.Basic); ok {
+			typ := this.Pass.TypesInfo.Types[n.X].Type
+			if t, ok := typ.Underlying().(*types.Basic); ok {
 				switch t.Kind() {
 				case types.String, types.UntypedString:
 					this.Print(" .. ")
@@ -1137,6 +1180,30 @@ func (this *Walker) printBinarySubexpr(e ast.Expr, n *ast.BinaryExpr, funcNode a
 	} else {
 		this.walkImpl(e, funcNode)
 	}
+}
+
+func (this *Walker) printPlusOneIndex(n *ast.IndexExpr, funcNode ast.Node) {
+	switch expr := n.Index.(type) {
+	case *ast.BinaryExpr:
+		if utils.LuaOpPrecedenceFromGoOp(expr.Op) < utils.LuaOpPrecedence_Add {
+			this.Print("(")
+			this.walkImpl(n.Index, funcNode)
+			this.Print(") + 1")
+			return
+		}
+	case *ast.BasicLit:
+		if expr.Kind == token.INT {
+			v, err := strconv.Atoi(expr.Value)
+			if err != nil {
+				panic(err)
+			}
+			this.Print(v + 1)
+			return
+		}
+	}
+
+	this.walkImpl(n.Index, funcNode)
+	this.Print(" + 1")
 }
 
 type Option func(w *Walker)

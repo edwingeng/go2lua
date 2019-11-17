@@ -532,9 +532,16 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			}
 			this.walkExprList(n.Args, funcNode)
 		} else {
-			this.printFuncName(n, funcNode)
+			arrayFrom := this.printFuncName(n, funcNode)
 			this.Print("(")
-			this.walkExprList(n.Args, funcNode)
+			if arrayFrom <= 0 {
+				this.walkExprList(n.Args, funcNode)
+			} else {
+				this.walkExprList(n.Args[:arrayFrom], funcNode)
+				this.Print(", {")
+				this.walkExprList(n.Args[arrayFrom:], funcNode)
+				this.Print("}")
+			}
 			this.Print(")")
 		}
 
@@ -1256,22 +1263,22 @@ func (this *Walker) printPlusOneIndex(n *ast.IndexExpr, funcNode ast.Node) {
 	this.Print(" + 1")
 }
 
-func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) {
+func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) int {
 	funcNameIdent, ok := n.Fun.(*ast.Ident)
 	if !ok {
-		return
+		return 0
 	}
 	obj := this.Pass.TypesInfo.ObjectOf(funcNameIdent)
 	if obj == nil {
-		return
+		return 0
 	}
 	if obj.Pkg() != nil {
 		this.Print(funcNameIdent.Name)
-		return
+		return 0
 	}
 	if str, ok := go2LuaFuncMap[funcNameIdent.Name]; ok {
 		this.Print(str)
-		return
+		return 0
 	}
 	if len(n.Args) == 1 {
 		switch funcNameIdent.Name {
@@ -1281,7 +1288,7 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) {
 					switch t.Kind() {
 					case types.String, types.UntypedString:
 						this.Print("string.len")
-						return
+						return 0
 					}
 				}
 			}
@@ -1290,11 +1297,18 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) {
 		switch funcNameIdent.Name {
 		case "append":
 			this.Print("slice.append")
-			return
+			return 0
+		}
+	} else {
+		switch funcNameIdent.Name {
+		case "append":
+			this.Print("slice.appendArray")
+			return 1
 		}
 	}
 
 	this.Print(funcNameIdent.Name)
+	return 0
 }
 
 type Option func(w *Walker)

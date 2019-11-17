@@ -113,3 +113,41 @@ local slice3 = function()
     local _ = myBools
     local _ = myStrings
 end
+
+local slice4 = function()
+    local myInt8s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myInt16s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myInt32s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myInt64s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myInts = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myUint8s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myUint16s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myUint32s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myUint64s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myUints = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myRunes = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myBytes = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myUintptrs = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myFloat32s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myFloat64s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
+    local myBools = slice.appendArray(slice.make(nil, 0), {false, true, false})
+    local myStrings = slice.appendArray(slice.make(nil, 0), {"hello", "world", "!"})
+
+    local _ = myInt8s
+    local _ = myInt16s
+    local _ = myInt32s
+    local _ = myInt64s
+    local _ = myInts
+    local _ = myUint8s
+    local _ = myUint16s
+    local _ = myUint32s
+    local _ = myUint64s
+    local _ = myUints
+    local _ = myRunes
+    local _ = myBytes
+    local _ = myUintptrs
+    local _ = myFloat32s
+    local _ = myFloat64s
+    local _ = myBools
+    local _ = myStrings
+end

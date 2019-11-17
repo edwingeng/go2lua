@@ -6,4 +6,5 @@ local string1 = function()
     local _ = 20320
     local _ = string.byte(str, 1)
     local _ = utf8.char(97)
+    local _ = string.len(str)
 end

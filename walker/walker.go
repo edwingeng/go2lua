@@ -375,11 +375,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.printError(errors.New("bad expression detected"), n)
 
 	case *ast.Ident:
-		if str, ok := go2LuaFuncMap[n.Name]; ok {
-			this.Print(str)
-		} else {
-			this.Print(n.Name)
-		}
+		this.Print(n.Name)
 
 	case *ast.BasicLit:
 		switch n.Kind {
@@ -421,7 +417,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.walkImpl(n.Sel, funcNode)
 
 	case *ast.IndexExpr:
-		typ := this.Pass.TypesInfo.Types[n.X].Type
+		typ := this.Pass.TypesInfo.TypeOf(n.X)
 		if t, ok := typ.Underlying().(*types.Basic); ok {
 			if t.Kind() == types.String {
 				this.Print("string.byte(")
@@ -475,13 +471,9 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 				}
 			}
 		}
-
-		if !bConvert {
-			this.walkImpl(n.Fun, funcNode)
-			this.Print("(")
-		} else if ident, ok := n.Fun.(*ast.Ident); ok {
-			if ident.Name == "string" {
-				typ := this.Pass.TypesInfo.Types[n.Args[0]].Type
+		if bConvert {
+			if ident, ok := n.Fun.(*ast.Ident); ok && ident.Name == "string" {
+				typ := this.Pass.TypesInfo.TypeOf(n.Args[0])
 				if t, ok := typ.Underlying().(*types.Basic); ok && t.Info()&types.IsInteger != 0 {
 					this.Print("utf8.char(")
 					this.walkExprList(n.Args, funcNode)
@@ -489,10 +481,11 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 					break
 				}
 			}
-		}
-
-		this.walkExprList(n.Args, funcNode)
-		if !bConvert {
+			this.walkExprList(n.Args, funcNode)
+		} else {
+			this.printFuncName(n, funcNode)
+			this.Print("(")
+			this.walkExprList(n.Args, funcNode)
 			this.Print(")")
 		}
 
@@ -1093,7 +1086,7 @@ func (this *Walker) printVarDefinition(local bool, names []string, spec *ast.Val
 		}
 	} else {
 		this.Print("= ")
-		typ := this.Pass.TypesInfo.Types[spec.Type].Type
+		typ := this.Pass.TypesInfo.TypeOf(spec.Type)
 		defVal := utils.DefaultValue(typ)
 		for i := 0; i < leN; i++ {
 			if i > 0 {
@@ -1204,6 +1197,40 @@ func (this *Walker) printPlusOneIndex(n *ast.IndexExpr, funcNode ast.Node) {
 
 	this.walkImpl(n.Index, funcNode)
 	this.Print(" + 1")
+}
+
+func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) {
+	funcNameIdent, ok := n.Fun.(*ast.Ident)
+	if !ok {
+		return
+	}
+	obj := this.Pass.TypesInfo.ObjectOf(funcNameIdent)
+	if obj == nil {
+		return
+	}
+	if obj.Pkg() != nil {
+		this.Print(funcNameIdent.Name)
+		return
+	}
+	if str, ok := go2LuaFuncMap[funcNameIdent.Name]; ok {
+		this.Print(str)
+		return
+	}
+	if len(n.Args) == 1 {
+		if funcNameIdent.Name == "len" {
+			if typ := this.Pass.TypesInfo.TypeOf(n.Args[0]); typ != nil {
+				if t, ok := typ.Underlying().(*types.Basic); ok {
+					switch t.Kind() {
+					case types.String, types.UntypedString:
+						this.Print("string.len")
+						return
+					}
+				}
+			}
+		}
+	}
+
+	this.Print(funcNameIdent.Name)
 }
 
 type Option func(w *Walker)

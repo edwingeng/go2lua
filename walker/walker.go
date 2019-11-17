@@ -890,6 +890,15 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		}
 
 	case *ast.RangeStmt:
+		bString := false
+		typ := this.Pass.TypesInfo.TypeOf(n.X)
+		if t, ok := typ.Underlying().(*types.Basic); ok {
+			switch t.Kind() {
+			case types.String, types.UntypedString:
+				bString = true
+			}
+		}
+
 		this.Print("for ")
 		if n.Key != nil {
 			this.walkImpl(n.Key, funcNode)
@@ -901,7 +910,11 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			this.walkImpl(n.Value, funcNode)
 		}
 
-		this.Print(" in pairs(")
+		if bString {
+			this.Print(" in utf8.codes(")
+		} else {
+			this.Print(" in pairs(")
+		}
 		this.walkImpl(n.X, funcNode)
 		this.Println(") do")
 

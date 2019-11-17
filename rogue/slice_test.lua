@@ -162,6 +162,53 @@ local test_slice_append = function()
     end
 end
 
+local test_slice_appendArray = function()
+    local s2a = slice.fromArray({1, 2, 3, 4, 5})
+    always(s2a, true)
+    local s2b = slice.fromArray({6, 7})
+    always(s2b, true)
+    local s2c = slice.appendArray(s2a, slice.toArray(s2b))
+    always(s2c, true)
+    local s2d = slice.fromArray({1, 2, 3, 4, 5, 6, 7})
+    always(s2d, true)
+    equals(s2c, s2d)
+
+    if #s2a ~= 5 then
+        error("#s2a ~= 5")
+    end
+    if #s2c ~= 7 then
+        error("#s2c ~= 7")
+    end
+
+    local s3a = slice.appendArray(undef, slice.toArray(s2b))
+    always(s3a, true)
+    equals(s3a, s2b)
+
+    local s5a = slice.appendArray(s2a, slice.toArray(s2a))
+    always(s5a, true)
+    local s5b = slice.fromArray({1, 2, 3, 4, 5, 1, 2, 3, 4, 5})
+    always(s5b, true)
+    equals(s5a, s5b)
+
+    if #s2a ~= 5 then
+        error("#s2a ~= 5")
+    end
+
+    local s6a = slice.slice(s2a, 2, 5)
+    always(s6a, false)
+    local s6b = slice.appendArray(s2a, slice.toArray(s6a))
+    always(s6b, false)
+    local s6c = slice.fromArray({1, 2, 3, 4, 5, 2, 3, 4})
+    always(s6c, true)
+    equals(s6b, s6c)
+
+    local s7a = slice.appendArray(s6a, slice.toArray(s2a))
+    always(s7a, false)
+    local s7b = slice.fromArray({2, 3, 4, 1, 2, 3, 4, 5})
+    always(s7b, true)
+    equals(s7a, s7b)
+end
+
 local test_slice_appendSlice = function()
     local s1a = slice.appendSlice(undef, undef)
     always(s1a, true)
@@ -391,6 +438,7 @@ test_slice_make()
 test_slice_fromArray()
 test_slice_toArray()
 test_slice_append()
+test_slice_appendArray()
 test_slice_appendSlice()
 test_slice_slice()
 test_slice_copy()

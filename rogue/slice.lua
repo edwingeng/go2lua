@@ -112,6 +112,23 @@ local slice_append = function(s, v)
     end
 end
 
+local slice_appendArray = function(s, a)
+    if s ~= undef then
+        local leN = s.len
+        local x = {data = s.data, len = s.len + #a, off = s.off}
+        for i, v in ipairs(a) do
+            x.data[leN + i + x.off] = v
+        end
+        return setmetatable(x, slice_mt)
+    else
+        local x = {data = a, len = #a, off = 0}
+        for i, v in ipairs(a) do
+            x.data[i] = v
+        end
+        return setmetatable(x, slice_mt)
+    end
+end
+
 local slice_appendSlice = function(s, appendix)
     if appendix == undef then
         if s ~= undef then
@@ -254,6 +271,7 @@ return {
     fromArray = function(s, deep) return slice_fromArray(s, deep, 1) end,
     toArray = function(s, deep) return slice_toArray(s, deep, 1) end,
     append = slice_append,
+    appendArray = slice_appendArray,
     appendSlice = slice_appendSlice,
     slice = slice_slice,
     copy = slice_copy,

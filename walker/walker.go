@@ -111,13 +111,38 @@ func (this *Walker) isCallExpr_MakeMap(node ast.Node) bool {
 			if funcExpr.Name == "make" {
 				if len(n.Args) > 0 {
 					if _, ok := n.Args[0].(*ast.MapType); ok {
-						return true
+						obj := this.Pass.TypesInfo.ObjectOf(funcExpr)
+						if obj != nil {
+							if obj.Pkg() == nil {
+								return true
+							}
+						}
 					}
 				}
 			}
 		}
 	}
 	return false
+}
+
+func (this *Walker) isCallExpr_MakeSlice(node ast.Node) (*ast.ArrayType, ast.Expr, bool) {
+	if n, ok := node.(*ast.CallExpr); ok {
+		if funcExpr, ok := n.Fun.(*ast.Ident); ok {
+			if funcExpr.Name == "make" {
+				if len(n.Args) > 0 {
+					if arrType, ok := n.Args[0].(*ast.ArrayType); ok {
+						obj := this.Pass.TypesInfo.ObjectOf(funcExpr)
+						if obj != nil {
+							if obj.Pkg() == nil {
+								return arrType, n.Args[1], true
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil, nil, false
 }
 
 func (this *Walker) initialize() {
@@ -282,6 +307,28 @@ func (this *Walker) walkExprList(list []ast.Expr, funcNode ast.Node) {
 		}
 		if this.isCallExpr_MakeMap(x) {
 			this.Print("{}")
+		} else if arrType, lenExpr, yes := this.isCallExpr_MakeSlice(x); yes {
+			typ := this.Pass.TypesInfo.TypeOf(arrType.Elt)
+			switch t := typ.Underlying().(type) {
+			case *types.Basic:
+				if t.Info()&types.IsNumeric != 0 {
+					this.Print("slice.make(slice.newNumberArray, ")
+					this.walkImpl(lenExpr, funcNode)
+					this.Print(")")
+				} else if t.Info() == types.IsString {
+					this.Print("slice.make(slice.newStringArray, ")
+					this.walkImpl(lenExpr, funcNode)
+					this.Print(")")
+				} else if t.Info() == types.IsBoolean {
+					this.Print("slice.make(slice.newBoolArray, ")
+					this.walkImpl(lenExpr, funcNode)
+					this.Print(")")
+				} else {
+					panic("IMPOSSIBLE")
+				}
+			default:
+				panic("not implemented yet")
+			}
 		} else {
 			this.walkImpl(x, funcNode)
 		}
@@ -1091,12 +1138,7 @@ func (this *Walker) printVarDefinition(local bool, names []string, spec *ast.Val
 
 	if len(spec.Values) > 0 {
 		this.Print("= ")
-		for i, v := range spec.Values {
-			if i > 0 {
-				this.Print(", ")
-			}
-			this.walkImpl(v, funcNode)
-		}
+		this.walkExprList(spec.Values, funcNode)
 	} else {
 		this.Print("= ")
 		typ := this.Pass.TypesInfo.TypeOf(spec.Type)

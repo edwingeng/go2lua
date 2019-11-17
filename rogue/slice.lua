@@ -40,10 +40,10 @@ if expose_slice_metatable then
     slice_mt.__metatable = nil
 end
 
-local slice_make = function(fnInit, len)
+local slice_make = function(newArray, len)
     len = len or 0
     if len > 0 then
-        local a = fnInit(len)
+        local a = newArray(len)
         if a == nil then
             error("nil slice data")
         end
@@ -224,6 +224,30 @@ local slice_clone = function(s, start, eNd)
     return setmetatable({data = a, len = eNd - start, off = 0}, slice_mt)
 end
 
+local slice_newNumberArray = function (n)
+    local a = {}
+    for i = 1, n do
+        a[i] = 0
+    end
+    return a
+end
+
+local slice_newStringArray = function (n)
+    local a = {}
+    for i = 1, n do
+        a[i] = ""
+    end
+    return a
+end
+
+local slice_newBoolArray = function (n)
+    local a = {}
+    for i = 1, n do
+        a[i] = false
+    end
+    return a
+end
+
 return {
     mt = slice_mt,
     make = slice_make,
@@ -234,4 +258,7 @@ return {
     slice = slice_slice,
     copy = slice_copy,
     clone = slice_clone,
+    newNumberArray = slice_newNumberArray,
+    newStringArray = slice_newStringArray,
+    newBoolArray = slice_newBoolArray,
 }

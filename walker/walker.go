@@ -893,11 +893,11 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.Print("for ")
 		if n.Key != nil {
 			this.walkImpl(n.Key, funcNode)
-			this.Print(", ")
-		} else {
-			this.Print("_, ")
+		} else if n.Value == nil {
+			this.Print("_")
 		}
 		if n.Value != nil {
+			this.Print(", ")
 			this.walkImpl(n.Value, funcNode)
 		}
 

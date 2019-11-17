@@ -53,3 +53,12 @@ local rangeMap4 = function()
     ::pos1_continue::
     end
 end
+
+local rangeMap5 = function()
+    local m = {}
+    m["a"] = 100
+    m["b"] = 200
+
+    for _ in pairs(m) do
+    end
+end

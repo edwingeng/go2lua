@@ -52,3 +52,13 @@ pos1:
 		}
 	}
 }
+
+func rangeMap5() {
+	m := make(map[string]int)
+	m["a"] = 100
+	m["b"] = 200
+
+	for range m {
+		// Empty
+	}
+}

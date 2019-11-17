@@ -47,6 +47,8 @@ local operator4 = function(str1, str2, b1, b2, r1, r2)
     local _ = str1 .. str2
     local _ = "x" .. str1 .. "y"
     local _ = str1 .. "x" .. str2
+    local _ = b1 + b2
+    local _ = r1 + r2
 end
 
 local operator5 = function(n1, n2)

@@ -510,23 +510,25 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 	case *ast.CallExpr:
 		bConvert := false
+		fType := this.Pass.TypesInfo.Types[n.Fun]
 		if len(n.Args) == 1 {
-			if f, ok := n.Fun.(*ast.Ident); ok {
-				fType := this.Pass.TypesInfo.Types[f]
-				if fType.IsType() {
-					bConvert = true
-				}
+			if fType.IsType() {
+				bConvert = true
 			}
 		}
 		if bConvert {
-			if ident, ok := n.Fun.(*ast.Ident); ok && ident.Name == "string" {
+			tName := fType.Type.Underlying().String()
+			if tName == "string" {
 				typ := this.Pass.TypesInfo.TypeOf(n.Args[0])
 				if t, ok := typ.Underlying().(*types.Basic); ok && t.Info()&types.IsInteger != 0 {
 					this.Print("utf8.char(")
 					this.walkExprList(n.Args, funcNode)
 					this.Print(")")
-					break
+					return
 				}
+			} else if strings.HasPrefix(tName, "[]") {
+				this.Print("slice.make(nil, 0)")
+				return
 			}
 			this.walkExprList(n.Args, funcNode)
 		} else {
@@ -1272,7 +1274,8 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) {
 		return
 	}
 	if len(n.Args) == 1 {
-		if funcNameIdent.Name == "len" {
+		switch funcNameIdent.Name {
+		case "len":
 			if typ := this.Pass.TypesInfo.TypeOf(n.Args[0]); typ != nil {
 				if t, ok := typ.Underlying().(*types.Basic); ok {
 					switch t.Kind() {
@@ -1282,6 +1285,12 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) {
 					}
 				}
 			}
+		}
+	} else if len(n.Args) == 2 {
+		switch funcNameIdent.Name {
+		case "append":
+			this.Print("slice.append")
+			return
 		}
 	}
 

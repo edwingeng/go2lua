@@ -75,3 +75,41 @@ func slice2() {
 	_ = myBools
 	_ = myStrings
 }
+
+func slice3() {
+	myInt8s := append([]int8(nil), 1)
+	myInt16s := append([]int16(nil), 1)
+	myInt32s := append([]int32(nil), 1)
+	myInt64s := append([]int64(nil), 1)
+	myInts := append([]int(nil), 1)
+	myUint8s := append([]uint8(nil), 1)
+	myUint16s := append([]uint16(nil), 1)
+	myUint32s := append([]uint32(nil), 1)
+	myUint64s := append([]uint64(nil), 1)
+	myUints := append([]uint(nil), 1)
+	myRunes := append([]rune(nil), 1)
+	myBytes := append([]byte(nil), 1)
+	myUintptrs := append([]uintptr(nil), 1)
+	myFloat32s := append([]float32(nil), 1)
+	myFloat64s := append([]float64(nil), 1)
+	myBools := append([]bool(nil), false)
+	myStrings := append([]string(nil), "hello")
+
+	_ = myInt8s
+	_ = myInt16s
+	_ = myInt32s
+	_ = myInt64s
+	_ = myInts
+	_ = myUint8s
+	_ = myUint16s
+	_ = myUint32s
+	_ = myUint64s
+	_ = myUints
+	_ = myRunes
+	_ = myBytes
+	_ = myUintptrs
+	_ = myFloat32s
+	_ = myFloat64s
+	_ = myBools
+	_ = myStrings
+}

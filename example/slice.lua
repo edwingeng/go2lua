@@ -75,3 +75,41 @@ local slice2 = function()
     local _ = myBools
     local _ = myStrings
 end
+
+local slice3 = function()
+    local myInt8s = slice.append(slice.make(nil, 0), 1)
+    local myInt16s = slice.append(slice.make(nil, 0), 1)
+    local myInt32s = slice.append(slice.make(nil, 0), 1)
+    local myInt64s = slice.append(slice.make(nil, 0), 1)
+    local myInts = slice.append(slice.make(nil, 0), 1)
+    local myUint8s = slice.append(slice.make(nil, 0), 1)
+    local myUint16s = slice.append(slice.make(nil, 0), 1)
+    local myUint32s = slice.append(slice.make(nil, 0), 1)
+    local myUint64s = slice.append(slice.make(nil, 0), 1)
+    local myUints = slice.append(slice.make(nil, 0), 1)
+    local myRunes = slice.append(slice.make(nil, 0), 1)
+    local myBytes = slice.append(slice.make(nil, 0), 1)
+    local myUintptrs = slice.append(slice.make(nil, 0), 1)
+    local myFloat32s = slice.append(slice.make(nil, 0), 1)
+    local myFloat64s = slice.append(slice.make(nil, 0), 1)
+    local myBools = slice.append(slice.make(nil, 0), false)
+    local myStrings = slice.append(slice.make(nil, 0), "hello")
+
+    local _ = myInt8s
+    local _ = myInt16s
+    local _ = myInt32s
+    local _ = myInt64s
+    local _ = myInts
+    local _ = myUint8s
+    local _ = myUint16s
+    local _ = myUint32s
+    local _ = myUint64s
+    local _ = myUints
+    local _ = myRunes
+    local _ = myBytes
+    local _ = myUintptrs
+    local _ = myFloat32s
+    local _ = myFloat64s
+    local _ = myBools
+    local _ = myStrings
+end

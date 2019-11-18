@@ -161,3 +161,16 @@ local slice5 = function()
     myBools = slice.appendSlice(myBools, myBools)
     myStrings = slice.appendSlice(myStrings, myStrings)
 end
+
+local slice6 = function()
+    local myInts1 = slice.fromArray({1, 2, 3})
+    local myInts2 = slice.make(slice.newNumberArray, 10)
+    local myInts3 = slice.make(slice.newNumberArray, 1)
+    local myInts4 = slice.make(nil, 0)
+    local myInts5 = myInts1
+
+    print(slice.copy(myInts2, myInts1))
+    print(slice.copy(myInts3, myInts1))
+    print(slice.copy(myInts4, myInts1))
+    print(slice.copy(myInts5, myInts4))
+end

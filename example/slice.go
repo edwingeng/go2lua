@@ -161,3 +161,16 @@ func slice5() {
 	myBools = append(myBools, myBools...)
 	myStrings = append(myStrings, myStrings...)
 }
+
+func slice6() {
+	myInts1 := []int{1, 2, 3}
+	myInts2 := make([]int, 10)
+	myInts3 := make([]int, 1)
+	var myInts4 []int
+	myInts5 := myInts1
+
+	println(copy(myInts2, myInts1))
+	println(copy(myInts3, myInts1))
+	println(copy(myInts4, myInts1))
+	println(copy(myInts5, myInts4))
+}

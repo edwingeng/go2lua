@@ -1309,6 +1309,9 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) int {
 				this.Print("slice.appendSlice")
 			}
 			return 0
+		case "copy":
+			this.Print("slice.copy")
+			return 0
 		}
 	} else {
 		switch funcNameIdent.Name {

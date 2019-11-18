@@ -174,3 +174,21 @@ local slice6 = function()
     print(slice.copy(myInts4, myInts1))
     print(slice.copy(myInts5, myInts4))
 end
+
+local slice7 = function()
+    local myInts1 = slice.fromArray({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+    local myInts2 = slice.slice(myInts1, 1)
+    local myInts3 = slice.slice(myInts1, nil, myInts1.len + 1)
+    local myInts4 = slice.slice(myInts1, 2)
+    local myInts5 = slice.slice(myInts1, nil, myInts1.len - 1 + 1)
+    local myInts6 = slice.slice(myInts1, 3, 6)
+    local myInts7 = slice.slice(myInts1)
+
+    myInts6[1] = 0
+    myInts6[3] = 0
+
+    local myInts8 = slice.make(nil, 0)
+    local myInts9 = slice.slice(myInts8, 1)
+
+    local _, _, _, _, _, _ = myInts2, myInts3, myInts4, myInts5, myInts7, myInts9
+end

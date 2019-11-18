@@ -18,6 +18,10 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
+var (
+	ErrNotImplemented = errors.New("not implemented yet")
+)
+
 type gotoLabelInfo struct {
 	funcNode ast.Node
 	name     string
@@ -327,7 +331,7 @@ func (this *Walker) walkExprList(list []ast.Expr, funcNode ast.Node) {
 					panic("IMPOSSIBLE")
 				}
 			default:
-				panic("not implemented yet")
+				panic(ErrNotImplemented)
 			}
 		} else {
 			this.walkImpl(x, funcNode)
@@ -457,7 +461,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			case *ast.StructType:
 				this.walkImpl(n.Type, funcNode)
 			default:
-				panic("not implemented yet")
+				panic(ErrNotImplemented)
 			}
 		}
 		this.Print("{")
@@ -480,7 +484,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 				this.Print("string.byte(")
 				this.walkImpl(n.X, funcNode)
 				this.Print(", ")
-				this.printPlusOneIndex(n, funcNode)
+				this.printPlusOneIndex(n.Index, funcNode)
 				this.Print(")")
 				break
 			} else {
@@ -492,25 +496,33 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.Print("[")
 		switch typ.Underlying().(type) {
 		case *types.Slice:
-			this.printPlusOneIndex(n, funcNode)
+			this.printPlusOneIndex(n.Index, funcNode)
 		case *types.Array:
-			this.printPlusOneIndex(n, funcNode)
+			this.printPlusOneIndex(n.Index, funcNode)
 		default:
 			this.walkImpl(n.Index, funcNode)
 		}
 		this.Print("]")
 
 	case *ast.SliceExpr:
+		this.Print("slice.slice(")
 		this.walkImpl(n.X, funcNode)
+		if n.Low == nil && n.High == nil {
+			this.Print(")")
+			break
+		}
+
+		this.Print(", ")
 		if n.Low != nil {
-			this.walkImpl(n.Low, funcNode)
+			this.printPlusOneIndex(n.Low, funcNode)
+		} else {
+			this.Print("nil")
 		}
 		if n.High != nil {
-			this.walkImpl(n.High, funcNode)
+			this.Print(", ")
+			this.printPlusOneIndex(n.High, funcNode)
 		}
-		if n.Max != nil {
-			this.walkImpl(n.Max, funcNode)
-		}
+		this.Print(")")
 
 	case *ast.TypeAssertExpr:
 		this.walkImpl(n.X, funcNode)
@@ -542,17 +554,24 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			}
 			this.walkExprList(n.Args, funcNode)
 		} else {
-			arrayFrom := this.printFuncName(n, funcNode)
-			this.Print("(")
-			if arrayFrom <= 0 {
+			arrayRemaining, stripParen, appendLen := this.printFuncName(n, funcNode)
+			if !stripParen {
+				this.Print("(")
+			}
+			if !arrayRemaining {
 				this.walkExprList(n.Args, funcNode)
 			} else {
-				this.walkExprList(n.Args[:arrayFrom], funcNode)
+				this.walkExprList(n.Args[:1], funcNode)
 				this.Print(", {")
-				this.walkExprList(n.Args[arrayFrom:], funcNode)
+				this.walkExprList(n.Args[1:], funcNode)
 				this.Print("}")
 			}
-			this.Print(")")
+			if !stripParen {
+				this.Print(")")
+			}
+			if appendLen {
+				this.Print(".len")
+			}
 		}
 
 	case *ast.StarExpr:
@@ -611,7 +630,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 	// Types
 	case *ast.ArrayType:
-		panic("not implemented yet")
+		panic(ErrNotImplemented)
 
 	case *ast.StructType:
 		this.walkImpl(n.Fields, funcNode)
@@ -1246,12 +1265,12 @@ func (this *Walker) printBinarySubexpr(e ast.Expr, n *ast.BinaryExpr, funcNode a
 	}
 }
 
-func (this *Walker) printPlusOneIndex(n *ast.IndexExpr, funcNode ast.Node) {
-	switch expr := n.Index.(type) {
+func (this *Walker) printPlusOneIndex(index ast.Expr, funcNode ast.Node) {
+	switch expr := index.(type) {
 	case *ast.BinaryExpr:
 		if utils.LuaOpPrecedenceFromGoOp(expr.Op) < utils.LuaOpPrecedence_Add {
 			this.Print("(")
-			this.walkImpl(n.Index, funcNode)
+			this.walkImpl(index, funcNode)
 			this.Print(") + 1")
 			return
 		}
@@ -1266,37 +1285,40 @@ func (this *Walker) printPlusOneIndex(n *ast.IndexExpr, funcNode ast.Node) {
 		}
 	}
 
-	this.walkImpl(n.Index, funcNode)
+	this.walkImpl(index, funcNode)
 	this.Print(" + 1")
 }
 
-func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) int {
+func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRemaining, stripParen, appendLen bool) {
 	funcNameIdent, ok := n.Fun.(*ast.Ident)
 	if !ok {
-		return 0
+		return false, false, false
 	}
 	obj := this.Pass.TypesInfo.ObjectOf(funcNameIdent)
 	if obj == nil {
-		return 0
+		return false, false, false
 	}
 	if obj.Pkg() != nil {
 		this.Print(funcNameIdent.Name)
-		return 0
+		return false, false, false
 	}
 	if str, ok := go2LuaFuncMap[funcNameIdent.Name]; ok {
 		this.Print(str)
-		return 0
+		return false, false, false
 	}
 	if len(n.Args) == 1 {
 		switch funcNameIdent.Name {
 		case "len":
 			if typ := this.Pass.TypesInfo.TypeOf(n.Args[0]); typ != nil {
-				if t, ok := typ.Underlying().(*types.Basic); ok {
+				switch t := typ.Underlying().(type) {
+				case *types.Basic:
 					switch t.Kind() {
 					case types.String, types.UntypedString:
 						this.Print("string.len")
-						return 0
+						return false, false, false
 					}
+				case *types.Slice, *types.Array, *types.Map:
+					return false, true, true
 				}
 			}
 		}
@@ -1308,21 +1330,21 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) int {
 			} else {
 				this.Print("slice.appendSlice")
 			}
-			return 0
+			return false, false, false
 		case "copy":
 			this.Print("slice.copy")
-			return 0
+			return false, false, false
 		}
 	} else {
 		switch funcNameIdent.Name {
 		case "append":
 			this.Print("slice.appendArray")
-			return 1
+			return true, false, false
 		}
 	}
 
 	this.Print(funcNameIdent.Name)
-	return 0
+	return false, false, false
 }
 
 type Option func(w *Walker)

@@ -1,3 +1,21 @@
+local slice_iterateEmptySlice = function()
+    return nil
+end
+
+local slice_iterate = function(s)
+    if s.len == 0 then
+        return slice_iterateEmptySlice, nil, 0
+    else
+        local function iter(d, i)
+            i = i + 1
+            if i <= s.len then
+                return i, rawget(d, i + s.off)
+            end
+        end
+        return iter, s.data, 0
+    end
+end
+
 local slice_mt = {
     __len = function(s)
         return s.len
@@ -19,20 +37,8 @@ local slice_mt = {
             error(string.format("unexpected newindex [%d] with length %d", i, s.len))
         end
     end,
-    __pairs = function(s)
-        local function iter(d, k) return next(d, k) end
-        return iter, s.data, nil
-    end,
-    __ipairs = function(s)
-        local function iter(d, i)
-            local j = i + 1
-            local v = d[j]
-            if v then
-                return j, v
-            end
-        end
-        return iter, s.data, 0
-    end,
+    __pairs = slice_iterate,
+    __ipairs = slice_iterate,
     __metatable = false
 }
 

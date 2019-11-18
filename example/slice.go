@@ -174,3 +174,21 @@ func slice6() {
 	println(copy(myInts4, myInts1))
 	println(copy(myInts5, myInts4))
 }
+
+func slice7() {
+	myInts1 := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	myInts2 := myInts1[0:]
+	myInts3 := myInts1[:len(myInts1)]
+	myInts4 := myInts1[1:]
+	myInts5 := myInts1[:len(myInts1)-1]
+	myInts6 := myInts1[2:5]
+	myInts7 := myInts1[:]
+
+	myInts6[0] = 0
+	myInts6[2] = 0
+
+	var myInts8 []int
+	myInts9 := myInts8[0:]
+
+	_, _, _, _, _, _ = myInts2, myInts3, myInts4, myInts5, myInts7, myInts9
+}

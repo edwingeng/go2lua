@@ -151,3 +151,13 @@ local slice4 = function()
     local _ = myBools
     local _ = myStrings
 end
+
+local slice5 = function()
+    local myInts = slice.fromArray({1, 2, 3})
+    local myBools = slice.fromArray({false, true, false})
+    local myStrings = slice.fromArray({"hello", "world", "!"})
+
+    myInts = slice.appendSlice(myInts, myInts)
+    myBools = slice.appendSlice(myBools, myBools)
+    myStrings = slice.appendSlice(myStrings, myStrings)
+end

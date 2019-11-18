@@ -151,3 +151,13 @@ func slice4() {
 	_ = myBools
 	_ = myStrings
 }
+
+func slice5() {
+	myInts := []int{1, 2, 3}
+	myBools := []bool{false, true, false}
+	myStrings := []string{"hello", "world", "!"}
+
+	myInts = append(myInts, myInts...)
+	myBools = append(myBools, myBools...)
+	myStrings = append(myStrings, myStrings...)
+}

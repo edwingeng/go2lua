@@ -448,7 +448,17 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 	case *ast.CompositeLit:
 		if n.Type != nil {
-			this.walkImpl(n.Type, funcNode)
+			switch n.Type.(type) {
+			case *ast.ArrayType:
+				this.Print("slice.fromArray({")
+				this.walkExprList(n.Elts, funcNode)
+				this.Print("})")
+				return
+			case *ast.StructType:
+				this.walkImpl(n.Type, funcNode)
+			default:
+				panic("not implemented yet")
+			}
 		}
 		this.Print("{")
 		this.walkExprList(n.Elts, funcNode)
@@ -601,10 +611,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 	// Types
 	case *ast.ArrayType:
-		if n.Len != nil {
-			this.walkImpl(n.Len, funcNode)
-		}
-		this.walkImpl(n.Elt, funcNode)
+		panic("not implemented yet")
 
 	case *ast.StructType:
 		this.walkImpl(n.Fields, funcNode)
@@ -1296,7 +1303,11 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) int {
 	} else if len(n.Args) == 2 {
 		switch funcNameIdent.Name {
 		case "append":
-			this.Print("slice.append")
+			if n.Ellipsis == token.NoPos {
+				this.Print("slice.append")
+			} else {
+				this.Print("slice.appendSlice")
+			}
 			return 0
 		}
 	} else {

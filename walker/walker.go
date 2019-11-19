@@ -302,6 +302,16 @@ func (this *Walker) initialize() {
 							}
 						}
 					}
+				} else if funcExpr.Name == "recover" {
+					if len(n.Args) == 0 {
+						obj := this.Pass.TypesInfo.ObjectOf(funcExpr)
+						if obj != nil {
+							if obj.Pkg() == nil {
+								err := errors.New("recover() is not supported")
+								this.printError(err, n)
+							}
+						}
+					}
 				}
 			}
 		}

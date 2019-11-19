@@ -289,6 +289,21 @@ func (this *Walker) initialize() {
 				this.Fallthroughs[node] = targetCase
 				this.FallthroughCases[targetCase] = ""
 			}
+
+		case *ast.CallExpr:
+			if funcExpr, ok := n.Fun.(*ast.Ident); ok {
+				if funcExpr.Name == "make" {
+					if len(n.Args) == 3 {
+						obj := this.Pass.TypesInfo.ObjectOf(funcExpr)
+						if obj != nil {
+							if obj.Pkg() == nil {
+								err := errors.New("it is not supported to use the 3rd argument, cap, with make")
+								this.printError(err, n)
+							}
+						}
+					}
+				}
+			}
 		}
 
 		return true

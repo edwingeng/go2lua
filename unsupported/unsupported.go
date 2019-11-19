@@ -32,8 +32,8 @@ func checkUnsupportedTypes(pass *analysis.Pass) error {
 	m := make(map[int]struct{})
 	var a []utils.NodeError
 	for _, v := range ordered {
-		e, tnv := v.typ, pass.TypesInfo.Types[v.typ]
-		err := checkUnsupportedTypeImpl(tnv.Type)
+		e, x := v.typ, pass.TypesInfo.Types[v.typ]
+		err := checkUnsupportedTypeImpl(x.Type)
 		if err != nil {
 			if _, ok := m[v.pos.Line]; ok {
 				continue

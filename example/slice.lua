@@ -192,3 +192,12 @@ local slice7 = function()
 
     local _, _, _, _, _, _ = myInts2, myInts3, myInts4, myInts5, myInts7, myInts9
 end
+
+local slice8 = function()
+    local myStrings1 = slice.make(slice.newStringArray, 10)
+    print(slice.cap(myStrings1))
+    local myStrings2 = slice.slice(myStrings1, 3, 8)
+    print(slice.cap(myStrings2))
+    local myStrings3 = slice.slice(myStrings2, 2, 4)
+    print(slice.cap(myStrings3))
+end

@@ -78,6 +78,10 @@ local function slice_fromArray(a, deep, depth)
     return setmetatable(s, slice_mt)
 end
 
+local function slice_cap(s)
+    return #s.data - s.off
+end
+
 local function slice_toArray(s, deep, depth)
     if depth > 99 then
         error("depth > 99")
@@ -276,6 +280,7 @@ return {
     make = slice_make,
     fromArray = function(s, deep) return slice_fromArray(s, deep, 1) end,
     toArray = function(s, deep) return slice_toArray(s, deep, 1) end,
+    cap = slice_cap,
     append = slice_append,
     appendArray = slice_appendArray,
     appendSlice = slice_appendSlice,

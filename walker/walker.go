@@ -1317,10 +1317,26 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRema
 						this.Print("string.len")
 						return false, false, false
 					}
-				case *types.Slice, *types.Array, *types.Map:
+				case *types.Slice, *types.Array:
 					return false, true, true
+				case *types.Map:
+					this.Print("#")
+					return false, true, false
 				}
 			}
+			panic(ErrNotImplemented)
+		case "cap":
+			if typ := this.Pass.TypesInfo.TypeOf(n.Args[0]); typ != nil {
+				switch typ.Underlying().(type) {
+				case *types.Slice, *types.Array:
+					this.Print("slice.cap")
+					return false, false, false
+				case *types.Map:
+					this.Print("#")
+					return false, true, false
+				}
+			}
+			panic(ErrNotImplemented)
 		}
 	} else if len(n.Args) == 2 {
 		switch funcNameIdent.Name {

@@ -192,3 +192,12 @@ func slice7() {
 
 	_, _, _, _, _, _ = myInts2, myInts3, myInts4, myInts5, myInts7, myInts9
 }
+
+func slice8() {
+	myStrings1 := make([]string, 10)
+	println(cap(myStrings1))
+	myStrings2 := myStrings1[2:7]
+	println(cap(myStrings2))
+	myStrings3 := myStrings2[1:3]
+	println(cap(myStrings3))
+}

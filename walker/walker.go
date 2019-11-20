@@ -472,8 +472,11 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		}
 
 	case *ast.FuncLit:
+		this.Print("function (")
 		this.walkImpl(n.Type, n)
+		this.Println(")")
 		this.walkImpl(n.Body, n)
+		this.Print("end")
 
 	case *ast.CompositeLit:
 		if n.Type != nil {
@@ -578,6 +581,14 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 				return
 			}
 			this.walkExprList(n.Args, funcNode)
+		} else if _, ok := n.Fun.(*ast.FuncLit); ok {
+			funcName := this.makeFuncScopeUniqueName(funcNode, "lambda")
+			this.Printf("%s = ", funcName)
+			this.walkImpl(n.Fun, funcNode)
+			this.Println()
+			this.Printf("%s(", funcName)
+			this.walkExprList(n.Args, funcNode)
+			this.Print(")")
 		} else {
 			arrayRemaining, stripParen, appendLen := this.printFuncName(n, funcNode)
 			if !stripParen {

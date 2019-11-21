@@ -32,4 +32,4 @@ function printUsage() {
     $colorful && tput setaf 7
 }
 
-go run -gcflags '-N -l' github.com/edwingeng/go2lua "$@" github.com/edwingeng/go2lua/example
+go run -gcflags '-N -l' github.com/edwingeng/go2lua -outputDir=example "$@" github.com/edwingeng/go2lua/example

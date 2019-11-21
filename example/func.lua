@@ -11,19 +11,19 @@ local func1 = function()
     end
     f2()
 
-    __lambda = function ()
+    local __lambda = function ()
         print("f3")
     end
     __lambda()
 
-    __lambda_x2 = function (n1, n2, n3)
+    local __lambda_x2 = function (n1, n2, n3)
         print(n1, n2, n3)
     end
     __lambda_x2(1, 2, 3)
 end
 
 local func2 = function()
-    __lambda = function (cb)
+    local __lambda = function (cb)
         if cb ~= nil then
             cb(100)
         end

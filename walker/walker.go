@@ -583,7 +583,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			this.walkExprList(n.Args, funcNode)
 		} else if _, ok := n.Fun.(*ast.FuncLit); ok {
 			funcName := this.makeFuncScopeUniqueName(funcNode, "lambda")
-			this.Printf("%s = ", funcName)
+			this.Printf("local %s = ", funcName)
 			this.walkImpl(n.Fun, funcNode)
 			this.Println()
 			this.Printf("%s(", funcName)

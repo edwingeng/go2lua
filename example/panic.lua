@@ -20,6 +20,7 @@ local panic2 = function(b1)
         if b1 then
             error("world")
         end
+        return 1, 2, 3
     end
 
     local r = table.pack(xpcall(__body, debug.traceback))

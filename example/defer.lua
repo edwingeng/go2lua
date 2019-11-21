@@ -16,8 +16,7 @@ local defer1 = function()
         x.f(table.unpack(x.args))
     end
     if r[1] then
-        table.remove(r, 1)
-        return table.unpack(r)
+        return table.unpack(r, 2)
     else
         print(r[2])
     end
@@ -47,8 +46,7 @@ local defer2 = function()
         x.f(table.unpack(x.args))
     end
     if r[1] then
-        table.remove(r, 1)
-        return table.unpack(r)
+        return table.unpack(r, 2)
     else
         print(r[2])
     end
@@ -79,8 +77,7 @@ local defer3 = function()
         x.f(table.unpack(x.args))
     end
     if r[1] then
-        table.remove(r, 1)
-        return table.unpack(r)
+        return table.unpack(r, 2)
     else
         print(r[2])
     end
@@ -113,8 +110,7 @@ local defer4 = function()
                         x.f(table.unpack(x.args))
                     end
                     if r[1] then
-                        table.remove(r, 1)
-                        return table.unpack(r)
+                        return table.unpack(r, 2)
                     else
                         print(r[2])
                     end
@@ -128,8 +124,7 @@ local defer4 = function()
                 x.f(table.unpack(x.args))
             end
             if r[1] then
-                table.remove(r, 1)
-                return table.unpack(r)
+                return table.unpack(r, 2)
             else
                 print(r[2])
             end
@@ -142,8 +137,7 @@ local defer4 = function()
         x.f(table.unpack(x.args))
     end
     if r[1] then
-        table.remove(r, 1)
-        return table.unpack(r)
+        return table.unpack(r, 2)
     else
         print(r[2])
     end
@@ -183,8 +177,7 @@ local defer5 = function()
         x.f(table.unpack(x.args))
     end
     if r[1] then
-        table.remove(r, 1)
-        return table.unpack(r)
+        return table.unpack(r, 2)
     else
         print(r[2])
     end

@@ -1433,8 +1433,7 @@ func (this *Walker) printFuncBody(funcBody *ast.BlockStmt, node ast.Node) {
 			this.Println("end")
 			this.Println("if r[1] then")
 			this.Indent++
-			this.Println("table.remove(r, 1)")
-			this.Println("return table.unpack(r)")
+			this.Println("return table.unpack(r, 2)")
 			this.Indent--
 			this.Println("else")
 			this.Indent++

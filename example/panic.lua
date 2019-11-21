@@ -29,8 +29,7 @@ local panic2 = function(b1)
         x.f(table.unpack(x.args))
     end
     if r[1] then
-        table.remove(r, 1)
-        return table.unpack(r)
+        return table.unpack(r, 2)
     else
         print(r[2])
     end

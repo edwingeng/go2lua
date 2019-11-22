@@ -12,9 +12,8 @@ end
 local panic2 = function(b1)
     local __defered = {}
     local __body = function ()
-        local __funcObj = {args = {}}
-        table.insert(__defered, __funcObj)
-        __funcObj.f = function ()
+        __defered.args = {}
+        __defered.f = function ()
             print(b1)
         end
         if b1 then
@@ -24,13 +23,10 @@ local panic2 = function(b1)
     end
 
     local r = table.pack(xpcall(__body, debug.traceback))
-    for i = #__defered, 1, -1 do
-        local x = __defered[i]
-        x.f(table.unpack(x.args))
-    end
-    if r[1] then
-        return table.unpack(r, 2)
-    else
+    __defered.f(table.unpack(__defered.args))
+    if not r[1] then
         print(r[2])
+        return
     end
+    return table.unpack(r, 2)
 end

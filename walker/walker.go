@@ -44,7 +44,7 @@ type Walker struct {
 	ForShadows       map[ast.Node]struct{}
 	Fallthroughs     map[ast.Node]ast.Node
 	FallthroughCases map[ast.Node]string
-	FuncsHavingDefer map[ast.Node]struct{}
+	FuncsHavingDefer map[ast.Node]int
 }
 
 func NewWalker(pass *analysis.Pass, node ast.Node, opts ...Option) (w *Walker) {
@@ -59,7 +59,7 @@ func NewWalker(pass *analysis.Pass, node ast.Node, opts ...Option) (w *Walker) {
 		ForShadows:       make(map[ast.Node]struct{}),
 		Fallthroughs:     make(map[ast.Node]ast.Node),
 		FallthroughCases: make(map[ast.Node]string),
-		FuncsHavingDefer: make(map[ast.Node]struct{}),
+		FuncsHavingDefer: make(map[ast.Node]int),
 	}
 	for _, opt := range opts {
 		opt(w)
@@ -319,7 +319,7 @@ func (this *Walker) initialize() {
 
 		case *ast.DeferStmt:
 			top := funcStack[len(funcStack)-1]
-			this.FuncsHavingDefer[top] = struct{}{}
+			this.FuncsHavingDefer[top]++
 		}
 
 		return true
@@ -765,12 +765,19 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 	case *ast.DeferStmt:
 		this.Print()
 		this.CurrentNode = n.Call
-		name := this.makeFuncScopeUniqueName(funcNode, "funcObj")
-		this.Printf("local %s = {args = {", name)
-		this.walkExprList(n.Call.Args, funcNode)
-		this.Println("}}")
-		this.Printf("table.insert(__defered, %s)\n", name)
-		this.Printf("%s.f = ", name)
+		if this.FuncsHavingDefer[funcNode] == 1 {
+			this.Print("__defered.args = {")
+			this.walkExprList(n.Call.Args, funcNode)
+			this.Println("}")
+			this.Print("__defered.f = ")
+		} else {
+			name := this.makeFuncScopeUniqueName(funcNode, "funcObj")
+			this.Printf("local %s = {args = {", name)
+			this.walkExprList(n.Call.Args, funcNode)
+			this.Println("}}")
+			this.Printf("table.insert(__defered, %s)\n", name)
+			this.Printf("%s.f = ", name)
+		}
 		this.walkImpl(n.Call.Fun, funcNode)
 
 	case *ast.ReturnStmt:
@@ -1416,35 +1423,38 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRema
 }
 
 func (this *Walker) printFuncBody(funcBody *ast.BlockStmt, node ast.Node) {
-	if _, ok := this.FuncsHavingDefer[node]; ok {
+	_, ok := this.FuncsHavingDefer[node]
+	if ok {
 		this.Indent++
 		this.Println("local __defered = {}")
 		this.Println("local __body = function ()")
+	}
 
-		defer func() {
-			this.Println("end")
-			this.Println()
-			this.Println("local r = table.pack(xpcall(__body, debug.traceback))")
+	this.walkImpl(funcBody, node)
+
+	if ok {
+		this.Println("end")
+		this.Println()
+		this.Println("local r = table.pack(xpcall(__body, debug.traceback))")
+		if this.FuncsHavingDefer[node] == 1 {
+			this.Println("__defered.f(table.unpack(__defered.args))")
+		} else {
 			this.Println("for i = #__defered, 1, -1 do")
 			this.Indent++
 			this.Println("local x = __defered[i]")
 			this.Println("x.f(table.unpack(x.args))")
 			this.Indent--
 			this.Println("end")
-			this.Println("if r[1] then")
-			this.Indent++
-			this.Println("return table.unpack(r, 2)")
-			this.Indent--
-			this.Println("else")
-			this.Indent++
-			this.Println(`print(r[2])`)
-			this.Indent--
-			this.Println("end")
-			this.Indent--
-		}()
+		}
+		this.Println("if not r[1] then")
+		this.Indent++
+		this.Println("print(r[2])")
+		this.Println("return")
+		this.Indent--
+		this.Println("end")
+		this.Println("return table.unpack(r, 2)")
+		this.Indent--
 	}
-
-	this.walkImpl(funcBody, node)
 }
 
 type Option func(w *Walker)

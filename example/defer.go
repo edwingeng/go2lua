@@ -56,3 +56,9 @@ func defer5() {
 		}(i)
 	}
 }
+
+func defer6(n1, n2 int) {
+	defer func() {
+		println(n1, n2)
+	}()
+}

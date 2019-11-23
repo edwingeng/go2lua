@@ -37,6 +37,20 @@ do
     _ENV = newEnv
 end
 {{""}}
+local hashes = {
+{{- range .Files}}
+	{{- $h := hash .}}
+	init_{{$h}} = true,
+{{- end}}
+}
+local hashCount = 0
+for _ in pairs(hashes) do
+	hashCount = hashCount + 1
+end
+if hashCount ~= {{len .Files}} then
+	error("hash collision detected")
+end
+{{""}}
 {{- range .Files}}
 	{{- $h := hash .}}
 local init_{{$h}} = require("{{.}}")

@@ -15,6 +15,28 @@ do
     _ENV = newEnv
 end
 
+local hashes = {
+	init_20af73cf = true,
+	init_dd73c24f = true,
+	init_5fb63259 = true,
+	init_fb0077f9 = true,
+	init_ad493904 = true,
+	init_2abb52c7 = true,
+	init_06c2b30c = true,
+	init_04c8fc80 = true,
+	init_588a9963 = true,
+	init_9146c7e3 = true,
+	init_56f38f74 = true,
+	init_0cb6e51f = true,
+}
+local hashCount = 0
+for _ in pairs(hashes) do
+	hashCount = hashCount + 1
+end
+if hashCount ~= 12 then
+	error("hash collision detected")
+end
+
 local init_20af73cf = require("defer")
 if type(init_20af73cf) == "function" then
     init_20af73cf()

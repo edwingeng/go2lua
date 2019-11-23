@@ -15,54 +15,53 @@ do
     _ENV = newEnv
 end
 
-
-local init_001 = require("defer")
-if type(init_001) == "function" then
-    init_001()
+local init_20af73cf = require("defer")
+if type(init_20af73cf) == "function" then
+    init_20af73cf()
 end
-local init_002 = require("for")
-if type(init_002) == "function" then
-    init_002()
+local init_dd73c24f = require("for")
+if type(init_dd73c24f) == "function" then
+    init_dd73c24f()
 end
-local init_003 = require("func")
-if type(init_003) == "function" then
-    init_003()
+local init_5fb63259 = require("func")
+if type(init_5fb63259) == "function" then
+    init_5fb63259()
 end
-local init_004 = require("hello")
-if type(init_004) == "function" then
-    init_004()
+local init_fb0077f9 = require("hello")
+if type(init_fb0077f9) == "function" then
+    init_fb0077f9()
 end
-local init_005 = require("if")
-if type(init_005) == "function" then
-    init_005()
+local init_ad493904 = require("if")
+if type(init_ad493904) == "function" then
+    init_ad493904()
 end
-local init_006 = require("operator")
-if type(init_006) == "function" then
-    init_006()
+local init_2abb52c7 = require("operator")
+if type(init_2abb52c7) == "function" then
+    init_2abb52c7()
 end
-local init_007 = require("panic")
-if type(init_007) == "function" then
-    init_007()
+local init_06c2b30c = require("panic")
+if type(init_06c2b30c) == "function" then
+    init_06c2b30c()
 end
-local init_008 = require("range")
-if type(init_008) == "function" then
-    init_008()
+local init_04c8fc80 = require("range")
+if type(init_04c8fc80) == "function" then
+    init_04c8fc80()
 end
-local init_009 = require("slice")
-if type(init_009) == "function" then
-    init_009()
+local init_588a9963 = require("slice")
+if type(init_588a9963) == "function" then
+    init_588a9963()
 end
-local init_010 = require("string")
-if type(init_010) == "function" then
-    init_010()
+local init_9146c7e3 = require("string")
+if type(init_9146c7e3) == "function" then
+    init_9146c7e3()
 end
-local init_011 = require("switch")
-if type(init_011) == "function" then
-    init_011()
+local init_56f38f74 = require("switch")
+if type(init_56f38f74) == "function" then
+    init_56f38f74()
 end
-local init_012 = require("var")
-if type(init_012) == "function" then
-    init_012()
+local init_0cb6e51f = require("var")
+if type(init_0cb6e51f) == "function" then
+    init_0cb6e51f()
 end
 
 return gopkg

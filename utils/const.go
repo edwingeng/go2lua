@@ -36,13 +36,12 @@ do
     })
     _ENV = newEnv
 end
-
 {{""}}
 {{- range .Files}}
-	{{- $n := sn .}}
-local init_{{printf "%03d" $n}} = require("{{.}}")
-if type(init_{{printf "%03d" $n}}) == "function" then
-    init_{{printf "%03d" $n}}()
+	{{- $h := hash .}}
+local init_{{$h}} = require("{{.}}")
+if type(init_{{$h}}) == "function" then
+    init_{{$h}}()
 end
 {{- end}}
 

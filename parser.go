@@ -16,12 +16,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"text/template"
 
 	"github.com/edwingeng/go2lua/unsupported"
 	"github.com/edwingeng/go2lua/utils"
 	"github.com/edwingeng/go2lua/walker"
+	"github.com/pierrec/xxHash/xxHash32"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/analysis/passes/shadow"
@@ -261,12 +261,12 @@ func (this *Parser) Output(dir string) {
 	}
 	wg.Wait()
 
-	var serialNumber int64
-	sn := func(str string) int64 {
-		return atomic.AddInt64(&serialNumber, 1)
+	hash := func(str string) string {
+		n := xxHash32.Checksum([]byte(str), 0)
+		return fmt.Sprintf("%08x", n)
 	}
 	funcMap := map[string]interface{}{
-		"sn": sn,
+		"hash": hash,
 	}
 
 	tpl := template.Must(template.New("gokpg").Funcs(funcMap).Parse(utils.TemplateGopkg))
@@ -285,10 +285,9 @@ func (this *Parser) Output(dir string) {
 				PkgPath: pkg.PkgPath,
 			}
 			for _, f := range pkg.GoFiles {
-				f = strings.TrimPrefix(f, dir)
-				f = strings.TrimLeft(f, "/\\")
+				f = filepath.Base(f)
 				f = strings.TrimSuffix(f, ".go")
-				f = this.pkgRel(path.Clean(f))
+				f = path.Join(this.pkgRel(pkg.PkgPath), f)
 				tplArgs.Files = append(tplArgs.Files, f)
 			}
 			tpl := template.Must(tpl.Clone())

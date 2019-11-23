@@ -44,3 +44,5 @@ local panic2 = function(b1)
     end
     return table.unpack(r, 2)
 end
+
+return function() end

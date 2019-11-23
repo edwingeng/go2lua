@@ -72,3 +72,5 @@ local operator5 = function(n1, n2)
     local _ = (n1 | n2) ~ n1
     local _ = (n1 << n2) + ((n1 << n2) * n2 >> n1)
 end
+
+return function() end

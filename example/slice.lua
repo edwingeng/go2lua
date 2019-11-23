@@ -215,3 +215,5 @@ local slice8 = function()
     local myStrings3 = slice.slice(myStrings2, 2, 4)
     print(slice.cap(myStrings3))
 end
+
+return function() end

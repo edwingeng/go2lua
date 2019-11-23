@@ -163,3 +163,5 @@ local forLoop11 = function()
     end
 ::outer_break::
 end
+
+return function() end

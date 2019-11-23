@@ -76,3 +76,5 @@ local rangeMap5 = function()
     for _ in pairs(m) do
     end
 end
+
+return function() end

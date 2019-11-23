@@ -53,10 +53,8 @@ end
 {{""}}
 {{- range .Files}}
 	{{- $h := hash .}}
-local init_{{$h}} = require("{{.}}")
-if type(init_{{$h}}) == "function" then
-    init_{{$h}}()
-end
+local init_{{$h}} = require("/{{.}}")
+init_{{$h}}()
 {{- end}}
 
 return gopkg

@@ -160,3 +160,5 @@ local switch5 = function(n)
     until true
 ::__switch_break::
 end
+
+return function() end

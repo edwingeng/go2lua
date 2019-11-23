@@ -198,3 +198,5 @@ local defer6 = function(n1, n2)
     end
     return table.unpack(r, 2)
 end
+
+return function() end

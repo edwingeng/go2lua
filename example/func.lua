@@ -46,3 +46,5 @@ local func2 = function()
         print(n)
     end)
 end
+
+return function() end

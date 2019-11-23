@@ -38,3 +38,5 @@ local string2 = function(str)
         print(i, r)
     end
 end
+
+return function() end

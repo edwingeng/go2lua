@@ -1203,9 +1203,11 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		// visited already through the individual
 		// nodes
 
+		this.Println()
 		if this.FuncInit {
-			this.Println()
 			this.Println("return init")
+		} else {
+			this.Println("return function() end")
 		}
 
 	case *ast.Package:

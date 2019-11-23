@@ -8,6 +8,8 @@ import (
 	"go/token"
 	"io/ioutil"
 	"math"
+	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -238,13 +240,18 @@ func (this *Parser) Output(dir string) {
 				w.Walk()
 
 				runtime.Gosched()
+				pkgDir := filepath.Join(dir, this.pkgRel(item.pkg.PkgPath))
+				if err := os.MkdirAll(pkgDir, 0744); err != nil {
+					panic(err)
+				}
+
 				f2 := filepath.Base(f1)
 				f3 := replaceSuffix(f2, ".go", ".lua")
-				f4 := filepath.Join(dir, f3)
+				f4 := filepath.Join(pkgDir, f3)
 				if err := ioutil.WriteFile(f4, w.Buffer.Bytes(), 0644); err != nil {
 					panic(err)
 				}
-				fmt.Printf("- %s\n", replaceSuffix(f1[len(commonPrefix):], ".go", ".lua"))
+				fmt.Println(replaceSuffix(f1[len(commonPrefix):], ".go", ".lua"))
 
 				if !this.ErrorOccurred {
 					this.ErrorOccurred = w.NumErrors > 0
@@ -280,9 +287,8 @@ func (this *Parser) Output(dir string) {
 			for _, f := range pkg.GoFiles {
 				f = strings.TrimPrefix(f, dir)
 				f = strings.TrimLeft(f, "/\\")
-				f = strings.TrimPrefix(f, this.pkgRoot)
-				f = strings.TrimPrefix(f, "/")
 				f = strings.TrimSuffix(f, ".go")
+				f = this.pkgRel(path.Clean(f))
 				tplArgs.Files = append(tplArgs.Files, f)
 			}
 			tpl := template.Must(tpl.Clone())
@@ -291,14 +297,22 @@ func (this *Parser) Output(dir string) {
 				panic(err)
 			}
 
-			outputFile := filepath.Join(dir, "__gopkg.lua")
+			pkgDir := filepath.Join(dir, this.pkgRel(pkg.PkgPath))
+			if err := os.MkdirAll(pkgDir, 0744); err != nil {
+				panic(err)
+			}
+			outputFile := filepath.Join(pkgDir, "__gopkg.lua")
 			if err := ioutil.WriteFile(outputFile, buf.Bytes(), 0644); err != nil {
 				panic(err)
 			}
-			fmt.Printf("- %s\n", "__gopkg.lua")
+			fmt.Println(outputFile[len(commonPrefix):])
 		}()
 	}
 	wg.Wait()
+}
+
+func (this *Parser) pkgRel(pkgPath string) string {
+	return strings.TrimLeft(strings.TrimPrefix(pkgPath, this.pkgRoot), "/")
 }
 
 func (this *Parser) PrintDetails(astTree, luaCode bool) {

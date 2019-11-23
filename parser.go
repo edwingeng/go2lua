@@ -14,8 +14,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"text/template"
 
 	"github.com/edwingeng/go2lua/unsupported"
+	"github.com/edwingeng/go2lua/utils"
 	"github.com/edwingeng/go2lua/walker"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -33,6 +36,7 @@ var (
 type Parser struct {
 	pkgPaths   []string
 	fileFilter func(file string) bool
+	pkgRoot    string
 
 	ErrorOccurred bool
 
@@ -174,6 +178,14 @@ func findShadows(pkg *packages.Package, syn *ast.File) map[token.Pos]int {
 }
 
 func (this *Parser) Output(dir string) {
+	if !filepath.IsAbs(dir) {
+		var err error
+		dir, err = filepath.Abs(filepath.Clean(dir))
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	type item struct {
 		pkg *packages.Package
 		syn *ast.File
@@ -241,6 +253,52 @@ func (this *Parser) Output(dir string) {
 		}()
 	}
 	wg.Wait()
+
+	var serialNumber int64
+	sn := func(str string) int64 {
+		return atomic.AddInt64(&serialNumber, 1)
+	}
+	funcMap := map[string]interface{}{
+		"sn": sn,
+	}
+
+	tpl := template.Must(template.New("gokpg").Funcs(funcMap).Parse(utils.TemplateGopkg))
+	for _, pkg := range this.pkgs {
+		wg.Add(1)
+		pkg := pkg
+		go func() {
+			defer wg.Done()
+			var buf bytes.Buffer
+			tplArgs := struct {
+				PkgName string
+				PkgPath string
+				Files   []string
+			}{
+				PkgName: pkg.Name,
+				PkgPath: pkg.PkgPath,
+			}
+			for _, f := range pkg.GoFiles {
+				f = strings.TrimPrefix(f, dir)
+				f = strings.TrimLeft(f, "/\\")
+				f = strings.TrimPrefix(f, this.pkgRoot)
+				f = strings.TrimPrefix(f, "/")
+				f = strings.TrimSuffix(f, ".go")
+				tplArgs.Files = append(tplArgs.Files, f)
+			}
+			tpl := template.Must(tpl.Clone())
+			err := tpl.Execute(&buf, &tplArgs)
+			if err != nil {
+				panic(err)
+			}
+
+			outputFile := filepath.Join(dir, "__gopkg.lua")
+			if err := ioutil.WriteFile(outputFile, buf.Bytes(), 0644); err != nil {
+				panic(err)
+			}
+			fmt.Printf("- %s\n", "__gopkg.lua")
+		}()
+	}
+	wg.Wait()
 }
 
 func (this *Parser) PrintDetails(astTree, luaCode bool) {
@@ -287,5 +345,11 @@ type Option func(p *Parser)
 func WithFileFilter(f func(file string) bool) Option {
 	return func(p *Parser) {
 		p.fileFilter = f
+	}
+}
+
+func WithPkgRoot(pkgRoot string) Option {
+	return func(p *Parser) {
+		p.pkgRoot = pkgRoot
 	}
 }

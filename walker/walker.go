@@ -1196,6 +1196,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.Print("-- package: ")
 		this.walkImpl(n.Name, funcNode)
 		this.Println()
+		this.Printf(utils.GopkgFile, this.Pass.Pkg.Path())
 
 		this.walkDeclList(n.Decls, funcNode)
 		// don't walk n.Comments - they have been

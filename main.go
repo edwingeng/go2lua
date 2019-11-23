@@ -11,10 +11,11 @@ func main() {
 	outputDir := flag.String("outputDir", "", "the output directory")
 	astTree := flag.Bool("astTree", false, "print ast tree(s) for debug purpose")
 	filter := flag.String("filter", "", "file filter, for debug purpose")
+	pkgRoot := flag.String("pkgRoot", "", "the root of all your package paths")
 	flag.Parse()
 
 	if *outputDir != "" {
-		if stat, err := os.Stat(*outputDir); err != nil {
+		if stat, err := os.Stat(*outputDir); os.IsNotExist(err) {
 			panic(err)
 		} else if !stat.IsDir() {
 			panic(fmt.Errorf("%s is not a directory", *outputDir))
@@ -35,7 +36,7 @@ func main() {
 	for i := 0; i < flag.NArg(); i++ {
 		pkgPaths = append(pkgPaths, flag.Arg(i))
 	}
-	p := NewParser(pkgPaths, WithFileFilter(fileFilter))
+	p := NewParser(pkgPaths, WithFileFilter(fileFilter), WithPkgRoot(*pkgRoot))
 	if err := p.Parse(); err != nil {
 		panic(err)
 	}

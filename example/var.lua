@@ -1,5 +1,19 @@
 -- package: example
 
+local gopkg = _G["github.com/edwingeng/go2lua/example"]
+do
+    local g = _G
+    local newEnv = setmetatable({}, {
+        __index = function (t, k)
+            local v = gopkg[k]
+            if v == nil then return g[k] end
+            return v
+        end,
+        __newindex = gopkg,
+    })
+    _ENV = newEnv
+end
+
 local myNumber1 = 0
 MyNumber2 = 0
 local myNumber3, myNumber4 = 0, 0

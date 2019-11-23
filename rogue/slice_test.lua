@@ -1,7 +1,7 @@
 require "undef"
 expose_slice_metatable = true
-local slice = require "slice"
-local inspect = require 'inspect'
+local slice = require("slice")
+local inspect = require("inspect")
 
 local always = function(s, full, suffix)
     suffix = suffix or ""

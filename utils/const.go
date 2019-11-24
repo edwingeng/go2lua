@@ -36,6 +36,16 @@ do
     })
     _ENV = newEnv
 end
+
+local checkModName = function (name)
+	if package.loaded[name] ~= nil then
+		error("mod name collision detected. name: " .. name)
+	end
+end
+{{""}}
+{{- range .Files}}
+checkModName("{{.}}")
+{{- end}}
 {{""}}
 local hashes = {
 {{- range .Files}}
@@ -53,7 +63,7 @@ end
 {{""}}
 {{- range .Files}}
 	{{- $h := hash .}}
-local init_{{$h}} = require("/{{.}}")
+local init_{{$h}} = require("{{.}}")
 {{- end}}
 
 {{- if .Initializers}}

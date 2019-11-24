@@ -15,10 +15,31 @@ do
     _ENV = newEnv
 end
 
+local checkModName = function (name)
+	if package.loaded[name] ~= nil then
+		error("mod name collision detected. name: " .. name)
+	end
+end
+
+checkModName("defer")
+checkModName("for")
+checkModName("func")
+checkModName("gostring")
+checkModName("hello")
+checkModName("if")
+checkModName("operator")
+checkModName("order")
+checkModName("panic")
+checkModName("range")
+checkModName("slice")
+checkModName("switch")
+checkModName("var")
+
 local hashes = {
 	init_20af73cf = true,
 	init_dd73c24f = true,
 	init_5fb63259 = true,
+	init_8873297d = true,
 	init_fb0077f9 = true,
 	init_ad493904 = true,
 	init_2abb52c7 = true,
@@ -26,7 +47,6 @@ local hashes = {
 	init_06c2b30c = true,
 	init_04c8fc80 = true,
 	init_588a9963 = true,
-	init_9146c7e3 = true,
 	init_56f38f74 = true,
 	init_0cb6e51f = true,
 }
@@ -38,19 +58,19 @@ if hashCount ~= 13 then
 	error("hash collision detected")
 end
 
-local init_20af73cf = require("/defer")
-local init_dd73c24f = require("/for")
-local init_5fb63259 = require("/func")
-local init_fb0077f9 = require("/hello")
-local init_ad493904 = require("/if")
-local init_2abb52c7 = require("/operator")
-local init_ed9fed76 = require("/order")
-local init_06c2b30c = require("/panic")
-local init_04c8fc80 = require("/range")
-local init_588a9963 = require("/slice")
-local init_9146c7e3 = require("/string")
-local init_56f38f74 = require("/switch")
-local init_0cb6e51f = require("/var")
+local init_20af73cf = require("defer")
+local init_dd73c24f = require("for")
+local init_5fb63259 = require("func")
+local init_8873297d = require("gostring")
+local init_fb0077f9 = require("hello")
+local init_ad493904 = require("if")
+local init_2abb52c7 = require("operator")
+local init_ed9fed76 = require("order")
+local init_06c2b30c = require("panic")
+local init_04c8fc80 = require("range")
+local init_588a9963 = require("slice")
+local init_56f38f74 = require("switch")
+local init_0cb6e51f = require("var")
 
 -- Initializers
 order3 = 100
@@ -64,6 +84,7 @@ _ = order5
 init_20af73cf() -- defer
 init_dd73c24f() -- for
 init_5fb63259() -- func
+init_8873297d() -- gostring
 init_fb0077f9() -- hello
 init_ad493904() -- if
 init_2abb52c7() -- operator
@@ -71,7 +92,6 @@ init_ed9fed76() -- order
 init_06c2b30c() -- panic
 init_04c8fc80() -- range
 init_588a9963() -- slice
-init_9146c7e3() -- string
 init_56f38f74() -- switch
 init_0cb6e51f() -- var
 

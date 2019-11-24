@@ -1094,27 +1094,10 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		}
 
 	case *ast.ValueSpec:
-		if n.Doc != nil {
-			this.walkImpl(n.Doc, funcNode)
-		}
-		this.walkIdentList(n.Names, funcNode)
-		if n.Type != nil {
-			this.walkImpl(n.Type, funcNode)
-		}
-		this.walkExprList(n.Values, funcNode)
-		if n.Comment != nil {
-			this.walkImpl(n.Comment, funcNode)
-		}
+		this.printValueSpec(n, funcNode)
 
 	case *ast.TypeSpec:
-		if n.Doc != nil {
-			this.walkImpl(n.Doc, funcNode)
-		}
-		this.walkImpl(n.Name, funcNode)
-		this.walkImpl(n.Type, funcNode)
-		if n.Comment != nil {
-			this.walkImpl(n.Comment, funcNode)
-		}
+		this.printTypeSpec(n, funcNode)
 
 	case *ast.BadDecl:
 		// nothing to do
@@ -1123,24 +1106,14 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		if n.Doc != nil {
 			this.walkImpl(n.Doc, funcNode)
 		}
-		switch n.Tok {
-		case token.VAR, token.CONST:
-			this.CurrentNode = n
-			this.Print()
-			for i, s := range n.Specs {
-				if i > 0 {
-					this.CurrentNode = s
-					this.Println()
-				}
-				spec, ok := s.(*ast.ValueSpec)
-				if !ok {
-					panic("impossible")
-				}
-				this.printVarDefinition(spec, funcNode)
+		this.CurrentNode = n
+		this.Print()
+		for i, s := range n.Specs {
+			if i > 0 {
+				this.CurrentNode = s
+				this.Println()
 			}
-		case token.TYPE:
-		default:
-			panic(ErrNotImplemented)
+			this.walkImpl(s, funcNode)
 		}
 
 	case *ast.FuncDecl:
@@ -1204,18 +1177,17 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 	}
 }
 
-func (this *Walker) printVarDefinition(spec *ast.ValueSpec, funcNode ast.Node) {
+func (this *Walker) printValueSpec(spec *ast.ValueSpec, funcNode ast.Node) {
+	if spec.Doc != nil {
+		this.walkImpl(spec.Doc, funcNode)
+	}
+
 	if funcNode != nil {
 		this.Print("local ")
 	}
-	for i, name := range spec.Names {
-		if i > 0 {
-			this.Print(", ")
-		}
-		this.Print(name.Name)
-	}
-
+	this.walkIdentList(spec.Names, funcNode)
 	this.Print(" = ")
+
 	if len(spec.Values) > 0 {
 		if funcNode != nil {
 			this.walkExprList(spec.Values, funcNode)
@@ -1252,6 +1224,10 @@ func (this *Walker) printVarDefinition(spec *ast.ValueSpec, funcNode ast.Node) {
 			this.Print(defVal)
 		}
 	}
+}
+
+func (this *Walker) printTypeSpec(spec *ast.TypeSpec, funcNode ast.Node) {
+
 }
 
 func (this *Walker) printCaseClauseLabel(newline bool, node ast.Node) {

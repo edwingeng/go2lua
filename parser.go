@@ -268,6 +268,12 @@ func (this *Parser) Output(dir string) {
 	}
 	wg.Wait()
 
+	if this.fileFilter == nil {
+		this.outputPkg(dir, pkgLevelDataMap)
+	}
+}
+
+func (this *Parser) outputPkg(dir string, pkgLevelDataMap map[*packages.Package]*walker.PkgLevelData) {
 	hash := func(str string) string {
 		n := xxHash32.Checksum([]byte(str), 0)
 		return fmt.Sprintf("%08x", n)
@@ -276,7 +282,9 @@ func (this *Parser) Output(dir string) {
 		"hash": hash,
 	}
 
+	commonPrefix := this.commonPrefix()
 	tpl := template.Must(template.New("gokpg").Funcs(funcMap).Parse(utils.TemplateGopkg))
+	var wg sync.WaitGroup
 	for _, pkg := range this.pkgs {
 		wg.Add(1)
 		pkg := pkg

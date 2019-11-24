@@ -23,11 +23,9 @@ func main() {
 	}
 
 	fileFilter := func(file string) bool {
-		if *filter != "" {
-			matched, err := filepath.Match(*filter, filepath.Base(file))
-			if err != nil || !matched {
-				return false
-			}
+		matched, err := filepath.Match(*filter, filepath.Base(file))
+		if err != nil || !matched {
+			return false
 		}
 		return true
 	}
@@ -36,7 +34,12 @@ func main() {
 	for i := 0; i < flag.NArg(); i++ {
 		pkgPaths = append(pkgPaths, flag.Arg(i))
 	}
-	p := NewParser(pkgPaths, WithFileFilter(fileFilter), WithPkgRoot(*pkgRoot))
+	var opts []Option
+	if *filter != "" {
+		opts = append(opts, WithFileFilter(fileFilter))
+	}
+	opts = append(opts, WithPkgRoot(*pkgRoot))
+	p := NewParser(pkgPaths, opts...)
 	if err := p.Parse(); err != nil {
 		panic(err)
 	}

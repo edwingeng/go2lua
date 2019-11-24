@@ -488,8 +488,9 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.Print("end")
 
 	case *ast.CompositeLit:
+		var st *ast.StructType
 		if n.Type != nil {
-			switch n.Type.(type) {
+			switch t := n.Type.(type) {
 			case *ast.ArrayType:
 				this.Print("goslice.fromArray({")
 				this.walkExprList(n.Elts, funcNode)
@@ -497,13 +498,18 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 				return
 			case *ast.StructType:
 				this.walkImpl(n.Type, funcNode)
+				st = t
 			default:
 				panic(ErrNotImplemented)
 			}
 		}
-		this.Print("{")
-		this.walkExprList(n.Elts, funcNode)
-		this.Print("}")
+		if st != nil && (st.Fields == nil || len(st.Fields.List) == 0) {
+			this.Print("gostruct.empty")
+		} else {
+			this.Print("{")
+			this.walkExprList(n.Elts, funcNode)
+			this.Print("}")
+		}
 
 	case *ast.ParenExpr:
 		this.Print("(")

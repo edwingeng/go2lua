@@ -3,6 +3,7 @@
 require("undef")
 goslice = require("goslice")
 godefer = require("godefer")
+gostruct = require("gostruct")
 
 local gopkg = {}
 _G["github.com/edwingeng/go2lua/example"] = gopkg

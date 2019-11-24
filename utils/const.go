@@ -54,7 +54,17 @@ end
 {{- range .Files}}
 	{{- $h := hash .}}
 local init_{{$h}} = require("/{{.}}")
-init_{{$h}}()
+{{- end}}
+
+{{- if .Initializers}}
+
+-- Initializers
+{{.Initializers}}
+{{- end}}
+
+{{- range .Files}}
+	{{- $h := hash .}}
+init_{{$h}}() -- {{.}}
 {{- end}}
 
 return gopkg

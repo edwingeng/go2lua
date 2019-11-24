@@ -14,13 +14,13 @@ do
     _ENV = newEnv
 end
 
-local forLoop1 = function()
+forLoop1 = function()
     while true do
         break
     end
 end
 
-local forLoop2 = function()
+forLoop2 = function()
     do
         local i = 0
         while i < 3 do
@@ -29,14 +29,14 @@ local forLoop2 = function()
     end
 end
 
-local forLoop3 = function()
+forLoop3 = function()
     local i = 0
     while i < 1 do
         break
     end
 end
 
-local forLoop4 = function()
+forLoop4 = function()
     do
         local i = 0
         while true do
@@ -46,7 +46,7 @@ local forLoop4 = function()
     end
 end
 
-local forLoop5 = function()
+forLoop5 = function()
     local i = 0
     while true do
         if i >= 1 then
@@ -56,7 +56,7 @@ local forLoop5 = function()
     end
 end
 
-local forLoop6 = function()
+forLoop6 = function()
     do
         local i = 0
         while i < 3 do
@@ -82,7 +82,7 @@ local forLoop6 = function()
     end
 end
 
-local forLoop7 = function()
+forLoop7 = function()
     do
         local i = 0
         while i < 3 do
@@ -95,7 +95,7 @@ local forLoop7 = function()
 ::pos1_break::
 end
 
-local forLoop8 = function()
+forLoop8 = function()
     do
         local i = 0
         while i < 3 do
@@ -108,7 +108,7 @@ local forLoop8 = function()
     end
 end
 
-local forLoop9 = function(n)
+forLoop9 = function(n)
     if n > 0 then
         goto pos1
     end
@@ -127,7 +127,7 @@ local forLoop9 = function(n)
     end
 end
 
-local forLoop10 = function()
+forLoop10 = function()
     do
         local i = 0
         while i < 3 do
@@ -140,7 +140,7 @@ local forLoop10 = function()
     end
 end
 
-local forLoop11 = function()
+forLoop11 = function()
     do
         local i = 0
         while i < 4 do

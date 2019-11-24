@@ -14,7 +14,7 @@ do
     _ENV = newEnv
 end
 
-local string1 = function(b, r)
+string1 = function(b, r)
     local str = "hello"
     local _ = 97
     local _ = 20320
@@ -25,7 +25,7 @@ local string1 = function(b, r)
     local _ = string.len(str)
 end
 
-local string2 = function(str)
+string2 = function(str)
     do
         local i = 0
         while i < string.len(str) do

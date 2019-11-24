@@ -14,7 +14,7 @@ do
     _ENV = newEnv
 end
 
-local rangeMap1 = function()
+rangeMap1 = function()
     local m = {}
     m["a"] = 100
     m["b"] = 200
@@ -24,7 +24,7 @@ local rangeMap1 = function()
     end
 end
 
-local rangeMap2 = function()
+rangeMap2 = function()
     local m = {}
     m["a"] = 100
     m["b"] = 200
@@ -40,7 +40,7 @@ local rangeMap2 = function()
     end
 end
 
-local rangeMap3 = function()
+rangeMap3 = function()
     local m = {}
     m["a"] = 100
     m["b"] = 200
@@ -54,7 +54,7 @@ local rangeMap3 = function()
 ::pos1_break::
 end
 
-local rangeMap4 = function()
+rangeMap4 = function()
     local m = {}
     m["a"] = 100
     m["b"] = 200
@@ -68,7 +68,7 @@ local rangeMap4 = function()
     end
 end
 
-local rangeMap5 = function()
+rangeMap5 = function()
     local m = {}
     m["a"] = 100
     m["b"] = 200

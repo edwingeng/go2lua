@@ -188,6 +188,11 @@ func (this *Parser) Output(dir string) {
 		}
 	}
 
+	pkgLevelDataMap := make(map[*packages.Package]*walker.PkgLevelData)
+	for _, pkg := range this.pkgs {
+		pkgLevelDataMap[pkg] = walker.NewPkgLevelData()
+	}
+
 	type item struct {
 		pkg *packages.Package
 		syn *ast.File
@@ -236,7 +241,9 @@ func (this *Parser) Output(dir string) {
 
 				pass := newPass(item.pkg, item.syn)
 				shadows := findShadows(item.pkg, item.syn)
-				w := walker.NewWalker(pass, item.syn, walker.WithShadows(shadows))
+				w := walker.NewWalker(pass, item.syn,
+					walker.WithShadows(shadows),
+					walker.WithPkgLevelData(pkgLevelDataMap[item.pkg]))
 				w.Walk()
 
 				runtime.Gosched()
@@ -276,13 +283,43 @@ func (this *Parser) Output(dir string) {
 		go func() {
 			defer wg.Done()
 			var buf bytes.Buffer
+
+			pkgLevelData := pkgLevelDataMap[pkg]
+			pkgLevelData.Lock()
+			for _, x := range pkg.TypesInfo.InitOrder {
+				for i, v := range x.Lhs {
+					if i > 0 {
+						buf.WriteString(", ")
+					}
+					buf.WriteString(v.Name())
+				}
+				buf.WriteString(" = ")
+				for i, v := range x.Lhs {
+					if i > 0 {
+						buf.WriteString(", ")
+					}
+					if str, ok := pkgLevelData.Vars[v.Pos()]; !ok {
+						panic("impossible")
+					} else {
+						buf.WriteString(str)
+					}
+				}
+				buf.WriteByte('\n')
+			}
+			pkgLevelData.Unlock()
+
+			initializers := buf.String()
+			buf.Reset()
+
 			tplArgs := struct {
-				PkgName string
-				PkgPath string
-				Files   []string
+				PkgName      string
+				PkgPath      string
+				Files        []string
+				Initializers string
 			}{
-				PkgName: pkg.Name,
-				PkgPath: pkg.PkgPath,
+				PkgName:      pkg.Name,
+				PkgPath:      pkg.PkgPath,
+				Initializers: initializers,
 			}
 			for _, f := range pkg.GoFiles {
 				f = filepath.Base(f)

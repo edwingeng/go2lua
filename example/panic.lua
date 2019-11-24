@@ -14,7 +14,7 @@ do
     _ENV = newEnv
 end
 
-local panic1 = function(b1, b2)
+panic1 = function(b1, b2)
     if b1 then
         error("hello")
     end
@@ -23,7 +23,7 @@ local panic1 = function(b1, b2)
     end
 end
 
-local panic2 = function(b1)
+panic2 = function(b1)
     local __defered = {}
     local __body = function ()
         __defered.args = {}

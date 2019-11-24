@@ -14,7 +14,7 @@ do
     _ENV = newEnv
 end
 
-local defer1 = function()
+defer1 = function()
     local __defered = {}
     local __body = function ()
         __defered.args = {}
@@ -32,7 +32,7 @@ local defer1 = function()
     return table.unpack(r, 2)
 end
 
-local defer2 = function()
+defer2 = function()
     local __defered = {}
     local __body = function ()
         local __funcObj = {args = {}}
@@ -62,7 +62,7 @@ local defer2 = function()
     return table.unpack(r, 2)
 end
 
-local defer3 = function()
+defer3 = function()
     local __defered = {}
     local __body = function ()
         local f1 = function ()
@@ -93,7 +93,7 @@ local defer3 = function()
     return table.unpack(r, 2)
 end
 
-local defer4 = function()
+defer4 = function()
     local __defered = {}
     local __body = function ()
         __defered.args = {}
@@ -141,7 +141,7 @@ local defer4 = function()
     return table.unpack(r, 2)
 end
 
-local defer5 = function()
+defer5 = function()
     local __defered = {}
     local __body = function ()
         do
@@ -181,7 +181,7 @@ local defer5 = function()
     return table.unpack(r, 2)
 end
 
-local defer6 = function(n1, n2)
+defer6 = function(n1, n2)
     local __defered = {}
     local __body = function ()
         __defered.args = {}

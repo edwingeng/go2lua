@@ -87,7 +87,7 @@ func checkUnsupportedTypeImpl(typ types.Type) error {
 	case *types.Chan:
 		return newError()
 	case *types.Named:
-		panic("IMPOSSIBLE")
+		panic("impossible")
 	default:
 		return newError()
 	}

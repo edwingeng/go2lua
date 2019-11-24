@@ -34,6 +34,7 @@ type Walker struct {
 
 	nextIds        map[string]int
 	funcScopeNames map[ast.Node]map[string]struct{}
+	pkgLevelData   *PkgLevelData
 
 	NumErrors        int
 	FuncInit         bool
@@ -103,7 +104,7 @@ func (this *Walker) makeFuncScopeUniqueName(funcNode ast.Node, key string) strin
 			}
 		}
 		if i > 999 {
-			panic("IMPOSSIBLE")
+			panic("impossible")
 		}
 	}
 
@@ -264,7 +265,7 @@ func (this *Walker) initialize() {
 						this.ContinueLabels[loopNode] = n.Label.Name + "_continue"
 					}
 				default:
-					panic("IMPOSSIBLE")
+					panic("impossible")
 				}
 
 			case n.Label != nil && n.Label.Name != "" && n.Tok == token.GOTO:
@@ -286,7 +287,7 @@ func (this *Walker) initialize() {
 					}
 				}
 				if targetCase == nil {
-					panic("IMPOSSIBLE")
+					panic("impossible")
 				}
 				this.Fallthroughs[node] = targetCase
 				this.FallthroughCases[targetCase] = ""
@@ -359,7 +360,7 @@ func (this *Walker) walkExprList(list []ast.Expr, funcNode ast.Node) {
 					this.walkImpl(lenExpr, funcNode)
 					this.Print(")")
 				} else {
-					panic("IMPOSSIBLE")
+					panic("impossible")
 				}
 			default:
 				panic(ErrNotImplemented)
@@ -524,7 +525,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 				this.Print(")")
 				break
 			} else {
-				panic("IMPOSSIBLE")
+				panic("impossible")
 			}
 		}
 
@@ -906,7 +907,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			for _, stmt := range n.Body.List {
 				caseClause, ok := stmt.(*ast.CaseClause)
 				if !ok {
-					panic("IMPOSSIBLE")
+					panic("impossible")
 				}
 				if caseClause.List == nil {
 					def = caseClause
@@ -1125,38 +1126,15 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 					this.CurrentNode = s
 					this.Println()
 				}
-				var mixedNames, lowerNames, upperNames []string
 				spec, ok := s.(*ast.ValueSpec)
 				if !ok {
-					panic("IMPOSSIBLE")
+					panic("impossible")
 				}
-				if funcNode != nil {
-					for _, name := range spec.Names {
-						mixedNames = append(mixedNames, name.Name)
-					}
-				} else {
-					for _, name := range spec.Names {
-						if ast.IsExported(name.Name) {
-							upperNames = append(upperNames, name.Name)
-						} else {
-							lowerNames = append(lowerNames, name.Name)
-						}
-					}
-				}
-
-				if len(mixedNames) > 0 {
-					this.printVarDefinition(true, mixedNames, spec, funcNode)
-				}
-				if len(lowerNames) > 0 {
-					this.printVarDefinition(true, lowerNames, spec, funcNode)
-				}
-				if len(lowerNames) > 0 && len(upperNames) > 0 {
-					this.Println()
-				}
-				if len(upperNames) > 0 {
-					this.printVarDefinition(false, upperNames, spec, funcNode)
-				}
+				this.printVarDefinition(spec, funcNode)
 			}
+		case token.TYPE:
+		default:
+			panic(ErrNotImplemented)
 		}
 
 	case *ast.FuncDecl:
@@ -1172,7 +1150,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			this.walkImpl(n.Recv, n)
 		}
 
-		if !ast.IsExported(n.Name.Name) {
+		if funcNode != nil || n.Name.Name == "init" && n.Recv == nil {
 			this.Print("local ")
 		}
 
@@ -1220,27 +1198,48 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 	}
 }
 
-func (this *Walker) printVarDefinition(local bool, names []string, spec *ast.ValueSpec, funcNode ast.Node) {
-	if local {
+func (this *Walker) printVarDefinition(spec *ast.ValueSpec, funcNode ast.Node) {
+	if funcNode != nil {
 		this.Print("local ")
 	}
-	leN := len(names)
-	switch leN {
-	case 0:
-	case 1:
-		this.Printf("%s ", names[0])
-	default:
-		this.Printf("%s ", strings.Join(names, ", "))
+	for i, name := range spec.Names {
+		if i > 0 {
+			this.Print(", ")
+		}
+		this.Print(name.Name)
 	}
 
+	this.Print(" = ")
 	if len(spec.Values) > 0 {
-		this.Print("= ")
-		this.walkExprList(spec.Values, funcNode)
+		if funcNode != nil {
+			this.walkExprList(spec.Values, funcNode)
+		} else {
+			for i := 0; i < len(spec.Names); i++ {
+				if i > 0 {
+					this.Print(", ")
+				}
+				this.Print("undef")
+
+				if this.pkgLevelData != nil {
+					tmp := this.Buffer
+					var hijacker bytes.Buffer
+					this.Buffer = hijacker
+					func() {
+						defer func() {
+							this.Buffer = tmp
+						}()
+						this.walkExprList([]ast.Expr{spec.Values[i]}, funcNode)
+						this.pkgLevelData.Lock()
+						this.pkgLevelData.Vars[spec.Names[i].Pos()] = this.Buffer.String()
+						this.pkgLevelData.Unlock()
+					}()
+				}
+			}
+		}
 	} else {
-		this.Print("= ")
 		typ := this.Pass.TypesInfo.TypeOf(spec.Type)
 		defVal := utils.DefaultValue(typ)
-		for i := 0; i < leN; i++ {
+		for i := 0; i < len(spec.Names); i++ {
 			if i > 0 {
 				this.Print(", ")
 			}
@@ -1465,5 +1464,11 @@ type Option func(w *Walker)
 func WithShadows(shadows map[token.Pos]int) Option {
 	return func(w *Walker) {
 		w.shadows = shadows
+	}
+}
+
+func WithPkgLevelData(pkgLevelData *PkgLevelData) Option {
+	return func(w *Walker) {
+		w.pkgLevelData = pkgLevelData
 	}
 }

@@ -14,7 +14,7 @@ do
     _ENV = newEnv
 end
 
-local operator1 = function(n, ok)
+operator1 = function(n, ok)
     local a = n
     local b = -a
     local _ = not ok
@@ -24,7 +24,7 @@ local operator1 = function(n, ok)
     local _, _, _ = d, e, f
 end
 
-local operator2 = function(n1, n2, b1, b2)
+operator2 = function(n1, n2, b1, b2)
     local _ = n1 * n2
     local _ = n1 / n2
     local _ = n1 % n2
@@ -46,7 +46,7 @@ local operator2 = function(n1, n2, b1, b2)
     local _ = b1 or b2
 end
 
-local operator3 = function(n1, n2)
+operator3 = function(n1, n2)
     local _ = n1 * n2 + n1 / n2
     local _ = (n1 * n2) + (n1 / n2)
     local _ = n1 * (n2 + n1) / n2
@@ -56,7 +56,7 @@ local operator3 = function(n1, n2)
     local _ = n1 * n2 + n1 / n2 + n1 % n2 + (n1 & n2)
 end
 
-local operator4 = function(str1, str2, b1, b2, r1, r2)
+operator4 = function(str1, str2, b1, b2, r1, r2)
     local _ = "x" .. "y"
     local _ = str1 .. str2
     local _ = "x" .. str1 .. "y"
@@ -65,7 +65,7 @@ local operator4 = function(str1, str2, b1, b2, r1, r2)
     local _ = r1 + r2
 end
 
-local operator5 = function(n1, n2)
+operator5 = function(n1, n2)
     local _ = (n1 | n2) ~ n2
     local _ = (n1 | n2) + n1 | n2
     local _ = (n1 + n2 | n1) + n2

@@ -14,7 +14,7 @@ do
     _ENV = newEnv
 end
 
-local slice1 = function()
+slice1 = function()
     local myInt8s = slice.make(nil, 0)
     local myInt16s = slice.make(nil, 0)
     local myInt32s = slice.make(nil, 0)
@@ -52,7 +52,7 @@ local slice1 = function()
     local _ = myStrings
 end
 
-local slice2 = function()
+slice2 = function()
     local myInt8s = slice.make(slice.newNumberArray, 10)
     local myInt16s = slice.make(slice.newNumberArray, 10)
     local myInt32s = slice.make(slice.newNumberArray, 10)
@@ -90,7 +90,7 @@ local slice2 = function()
     local _ = myStrings
 end
 
-local slice3 = function()
+slice3 = function()
     local myInt8s = slice.append(slice.make(nil, 0), 1)
     local myInt16s = slice.append(slice.make(nil, 0), 1)
     local myInt32s = slice.append(slice.make(nil, 0), 1)
@@ -128,7 +128,7 @@ local slice3 = function()
     local _ = myStrings
 end
 
-local slice4 = function()
+slice4 = function()
     local myInt8s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
     local myInt16s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
     local myInt32s = slice.appendArray(slice.make(nil, 0), {1, 2, 3})
@@ -166,7 +166,7 @@ local slice4 = function()
     local _ = myStrings
 end
 
-local slice5 = function()
+slice5 = function()
     local myInts = slice.fromArray({1, 2, 3})
     local myBools = slice.fromArray({false, true, false})
     local myStrings = slice.fromArray({"hello", "world", "!"})
@@ -176,7 +176,7 @@ local slice5 = function()
     myStrings = slice.appendSlice(myStrings, myStrings)
 end
 
-local slice6 = function()
+slice6 = function()
     local myInts1 = slice.fromArray({1, 2, 3})
     local myInts2 = slice.make(slice.newNumberArray, 10)
     local myInts3 = slice.make(slice.newNumberArray, 1)
@@ -189,7 +189,7 @@ local slice6 = function()
     print(slice.copy(myInts5, myInts4))
 end
 
-local slice7 = function()
+slice7 = function()
     local myInts1 = slice.fromArray({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
     local myInts2 = slice.slice(myInts1, 1)
     local myInts3 = slice.slice(myInts1, nil, myInts1.len + 1)
@@ -207,7 +207,7 @@ local slice7 = function()
     local _, _, _, _, _, _ = myInts2, myInts3, myInts4, myInts5, myInts7, myInts9
 end
 
-local slice8 = function()
+slice8 = function()
     local myStrings1 = slice.make(slice.newStringArray, 10)
     print(slice.cap(myStrings1))
     local myStrings2 = slice.slice(myStrings1, 3, 8)

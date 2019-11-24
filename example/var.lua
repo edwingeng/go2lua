@@ -14,18 +14,16 @@ do
     _ENV = newEnv
 end
 
-local myNumber1 = 0
+myNumber1 = 0
 MyNumber2 = 0
-local myNumber3, myNumber4 = 0, 0
+myNumber3, myNumber4 = 0, 0
 MyNumber5, MyNumber6 = 0, 0
-local myNumber7 = 0
-MyNumber8 = 0
+myNumber7, MyNumber8 = 0, 0
 
-local myString1 = ""
-local myString2 = ""
-MyString3 = ""
+myString1 = ""
+myString2, MyString3 = "", ""
 
-local var1 = function()
+var1 = function()
     local myInt8 = 0
     local myInt16 = 0
     local myInt32 = 0
@@ -74,7 +72,7 @@ local var1 = function()
     local _, _, _ = myString1, myString2, MyString3
 end
 
-local var2 = function()
+var2 = function()
     local myArray1 = {0, 0, 0}
     local myArray2 = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
 

@@ -14,13 +14,13 @@ do
     _ENV = newEnv
 end
 
-local switch1 = function(n)
+switch1 = function(n)
     repeat
         local __switch = n
     until true
 end
 
-local switch2 = function(n)
+switch2 = function(n)
     repeat
         local __switch = n
         if __switch == 1 then
@@ -35,7 +35,7 @@ local switch2 = function(n)
     until true
 end
 
-local switch3 = function(n)
+switch3 = function(n)
     local a = 3
     local b = 2
     repeat
@@ -52,7 +52,7 @@ local switch3 = function(n)
     until true
 end
 
-local switch4 = function(n)
+switch4 = function(n)
     repeat
         local __switch = n
         local __fall = false
@@ -107,7 +107,7 @@ local switch4 = function(n)
 ::__switch_break::
 end
 
-local switch5 = function(n)
+switch5 = function(n)
     repeat
         local __fall = false
         if n == 1 then

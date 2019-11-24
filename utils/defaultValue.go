@@ -24,7 +24,7 @@ func DefaultValue(typ types.Type) string {
 		case types.String:
 			return `""`
 		default:
-			panic("IMPOSSIBLE")
+			panic("impossible")
 		}
 
 	case *types.Array:
@@ -81,12 +81,12 @@ func DefaultValue(typ types.Type) string {
 		return "{}"
 
 	case *types.Chan:
-		panic("IMPOSSIBLE")
+		panic("impossible")
 
 	case *types.Named:
 		return DefaultValue(t.Underlying())
 
 	default:
-		panic("IMPOSSIBLE")
+		panic("impossible")
 	}
 }

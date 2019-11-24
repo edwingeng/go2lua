@@ -14,7 +14,7 @@ do
     _ENV = newEnv
 end
 
-local func1 = function()
+func1 = function()
     local f1 = function ()
         print("f1")
     end
@@ -36,7 +36,7 @@ local func1 = function()
     __lambda_x2(1, 2, 3)
 end
 
-local func2 = function()
+func2 = function()
     local __lambda = function (cb)
         if cb ~= nil then
             cb(100)

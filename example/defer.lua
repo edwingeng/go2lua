@@ -22,7 +22,7 @@ defer1 = function()
         end
     end
 
-    return defer.run1(__body)
+    return godefer.run1(__body)
 end
 
 defer2 = function()
@@ -42,7 +42,7 @@ defer2 = function()
         end
     end
 
-    return defer.runN(__body)
+    return godefer.runN(__body)
 end
 
 defer3 = function()
@@ -63,7 +63,7 @@ defer3 = function()
         print(300)
     end
 
-    return defer.runN(__body)
+    return godefer.runN(__body)
 end
 
 defer4 = function()
@@ -81,16 +81,16 @@ defer4 = function()
                         print(200)
                     end
 
-                    return defer.run1(__body)
+                    return godefer.run1(__body)
                 end
                 print(300)
             end
 
-            return defer.run1(__body)
+            return godefer.run1(__body)
         end
     end
 
-    return defer.run1(__body)
+    return godefer.run1(__body)
 end
 
 defer5 = function()
@@ -120,7 +120,7 @@ defer5 = function()
         end
     end
 
-    return defer.runN(__body)
+    return godefer.runN(__body)
 end
 
 defer6 = function(n1, n2)
@@ -131,7 +131,7 @@ defer6 = function(n1, n2)
         end
     end
 
-    return defer.run1(__body)
+    return godefer.run1(__body)
 end
 
 return function() end

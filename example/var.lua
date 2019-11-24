@@ -76,8 +76,8 @@ var2 = function()
     local myArray1 = {0, 0, 0}
     local myArray2 = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
 
-    local mySlice1 = slice.make(nil, 0)
-    local mySlice2 = slice.make(nil, 0)
+    local mySlice1 = goslice.make(nil, 0)
+    local mySlice2 = goslice.make(nil, 0)
 
     local foo1 = {String1 = "", Num1 = 0}
     local foo2 = {Foo1 = {String1 = "", Num1 = 0}, String2 = "", Num2 = 0}

@@ -348,15 +348,15 @@ func (this *Walker) walkExprList(list []ast.Expr, funcNode ast.Node) {
 			switch t := typ.Underlying().(type) {
 			case *types.Basic:
 				if t.Info()&types.IsNumeric != 0 {
-					this.Print("slice.make(slice.newNumberArray, ")
+					this.Print("goslice.make(goslice.newNumberArray, ")
 					this.walkImpl(lenExpr, funcNode)
 					this.Print(")")
 				} else if t.Info() == types.IsString {
-					this.Print("slice.make(slice.newStringArray, ")
+					this.Print("goslice.make(goslice.newStringArray, ")
 					this.walkImpl(lenExpr, funcNode)
 					this.Print(")")
 				} else if t.Info() == types.IsBoolean {
-					this.Print("slice.make(slice.newBoolArray, ")
+					this.Print("goslice.make(goslice.newBoolArray, ")
 					this.walkImpl(lenExpr, funcNode)
 					this.Print(")")
 				} else {
@@ -491,7 +491,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		if n.Type != nil {
 			switch n.Type.(type) {
 			case *ast.ArrayType:
-				this.Print("slice.fromArray({")
+				this.Print("goslice.fromArray({")
 				this.walkExprList(n.Elts, funcNode)
 				this.Print("})")
 				return
@@ -542,7 +542,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.Print("]")
 
 	case *ast.SliceExpr:
-		this.Print("slice.slice(")
+		this.Print("goslice.slice(")
 		this.walkImpl(n.X, funcNode)
 		if n.Low == nil && n.High == nil {
 			this.Print(")")
@@ -586,7 +586,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 					return
 				}
 			} else if strings.HasPrefix(tName, "[]") {
-				this.Print("slice.make(nil, 0)")
+				this.Print("goslice.make(nil, 0)")
 				return
 			}
 			this.walkExprList(n.Args, funcNode)
@@ -1390,7 +1390,7 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRema
 			if typ := this.Pass.TypesInfo.TypeOf(n.Args[0]); typ != nil {
 				switch typ.Underlying().(type) {
 				case *types.Slice, *types.Array:
-					this.Print("slice.cap")
+					this.Print("goslice.cap")
 					return false, false, false
 				case *types.Map:
 					this.Print("#")
@@ -1403,19 +1403,19 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRema
 		switch funcNameIdent.Name {
 		case "append":
 			if n.Ellipsis == token.NoPos {
-				this.Print("slice.append")
+				this.Print("goslice.append")
 			} else {
-				this.Print("slice.appendSlice")
+				this.Print("goslice.appendSlice")
 			}
 			return false, false, false
 		case "copy":
-			this.Print("slice.copy")
+			this.Print("goslice.copy")
 			return false, false, false
 		}
 	} else {
 		switch funcNameIdent.Name {
 		case "append":
-			this.Print("slice.appendArray")
+			this.Print("goslice.appendArray")
 			return true, false, false
 		}
 	}
@@ -1437,9 +1437,9 @@ func (this *Walker) printFuncBody(funcBody *ast.BlockStmt, node ast.Node) {
 		this.Println("end")
 		this.Println()
 		if this.FuncsHavingDefer[node] == 1 {
-			this.Println("return defer.run1(__body)")
+			this.Println("return godefer.run1(__body)")
 		} else {
-			this.Println("return defer.runN(__body)")
+			this.Println("return godefer.runN(__body)")
 		}
 		this.Indent--
 	}

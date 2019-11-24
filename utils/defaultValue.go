@@ -40,7 +40,7 @@ func DefaultValue(typ types.Type) string {
 		return sb.String()
 
 	case *types.Slice:
-		return "slice.make(nil, 0)"
+		return "goslice.make(nil, 0)"
 
 	case *types.Struct:
 		var sb strings.Builder

@@ -35,7 +35,7 @@ panic2 = function(b1)
         return 1, 2, 3
     end
 
-    return defer.run1(__body)
+    return godefer.run1(__body)
 end
 
 return function() end

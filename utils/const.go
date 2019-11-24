@@ -22,6 +22,10 @@ const (
 	TemplateGopkg = `{{"" -}}
 -- package: {{.PkgName}}
 
+require("undef")
+goslice = require("goslice")
+godefer = require("godefer")
+
 local gopkg = {}
 _G["{{.PkgPath}}"] = gopkg
 do

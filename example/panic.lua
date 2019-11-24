@@ -24,8 +24,7 @@ panic1 = function(b1, b2)
 end
 
 panic2 = function(b1)
-    local __defered = {}
-    local __body = function ()
+    local __body = function (__defered)
         __defered.args = {}
         __defered.f = function ()
             print(b1)
@@ -36,13 +35,7 @@ panic2 = function(b1)
         return 1, 2, 3
     end
 
-    local r = table.pack(xpcall(__body, debug.traceback))
-    __defered.f(table.unpack(__defered.args))
-    if not r[1] then
-        print(r[2])
-        return
-    end
-    return table.unpack(r, 2)
+    return defer.run1(__body)
 end
 
 return function() end

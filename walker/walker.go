@@ -1428,8 +1428,7 @@ func (this *Walker) printFuncBody(funcBody *ast.BlockStmt, node ast.Node) {
 	_, ok := this.FuncsHavingDefer[node]
 	if ok {
 		this.Indent++
-		this.Println("local __defered = {}")
-		this.Println("local __body = function ()")
+		this.Println("local __body = function (__defered)")
 	}
 
 	this.walkImpl(funcBody, node)
@@ -1437,24 +1436,11 @@ func (this *Walker) printFuncBody(funcBody *ast.BlockStmt, node ast.Node) {
 	if ok {
 		this.Println("end")
 		this.Println()
-		this.Println("local r = table.pack(xpcall(__body, debug.traceback))")
 		if this.FuncsHavingDefer[node] == 1 {
-			this.Println("__defered.f(table.unpack(__defered.args))")
+			this.Println("return defer.run1(__body)")
 		} else {
-			this.Println("for i = #__defered, 1, -1 do")
-			this.Indent++
-			this.Println("local x = __defered[i]")
-			this.Println("x.f(table.unpack(x.args))")
-			this.Indent--
-			this.Println("end")
+			this.Println("return defer.runN(__body)")
 		}
-		this.Println("if not r[1] then")
-		this.Indent++
-		this.Println("print(r[2])")
-		this.Println("return")
-		this.Indent--
-		this.Println("end")
-		this.Println("return table.unpack(r, 2)")
 		this.Indent--
 	}
 }

@@ -15,26 +15,18 @@ do
 end
 
 defer1 = function()
-    local __defered = {}
-    local __body = function ()
+    local __body = function (__defered)
         __defered.args = {}
         __defered.f = function ()
             print(100)
         end
     end
 
-    local r = table.pack(xpcall(__body, debug.traceback))
-    __defered.f(table.unpack(__defered.args))
-    if not r[1] then
-        print(r[2])
-        return
-    end
-    return table.unpack(r, 2)
+    return defer.run1(__body)
 end
 
 defer2 = function()
-    local __defered = {}
-    local __body = function ()
+    local __body = function (__defered)
         local __funcObj = {args = {}}
         table.insert(__defered, __funcObj)
         __funcObj.f = function ()
@@ -50,21 +42,11 @@ defer2 = function()
         end
     end
 
-    local r = table.pack(xpcall(__body, debug.traceback))
-    for i = #__defered, 1, -1 do
-        local x = __defered[i]
-        x.f(table.unpack(x.args))
-    end
-    if not r[1] then
-        print(r[2])
-        return
-    end
-    return table.unpack(r, 2)
+    return defer.runN(__body)
 end
 
 defer3 = function()
-    local __defered = {}
-    local __body = function ()
+    local __body = function (__defered)
         local f1 = function ()
             print(100)
         end
@@ -81,29 +63,17 @@ defer3 = function()
         print(300)
     end
 
-    local r = table.pack(xpcall(__body, debug.traceback))
-    for i = #__defered, 1, -1 do
-        local x = __defered[i]
-        x.f(table.unpack(x.args))
-    end
-    if not r[1] then
-        print(r[2])
-        return
-    end
-    return table.unpack(r, 2)
+    return defer.runN(__body)
 end
 
 defer4 = function()
-    local __defered = {}
-    local __body = function ()
+    local __body = function (__defered)
         __defered.args = {}
         __defered.f = function ()
-            local __defered = {}
-            local __body = function ()
+            local __body = function (__defered)
                 __defered.args = {}
                 __defered.f = function ()
-                    local __defered = {}
-                    local __body = function ()
+                    local __body = function (__defered)
                         __defered.args = {}
                         __defered.f = function ()
                             print(100)
@@ -111,39 +81,20 @@ defer4 = function()
                         print(200)
                     end
 
-                    local r = table.pack(xpcall(__body, debug.traceback))
-                    __defered.f(table.unpack(__defered.args))
-                    if not r[1] then
-                        print(r[2])
-                        return
-                    end
-                    return table.unpack(r, 2)
+                    return defer.run1(__body)
                 end
                 print(300)
             end
 
-            local r = table.pack(xpcall(__body, debug.traceback))
-            __defered.f(table.unpack(__defered.args))
-            if not r[1] then
-                print(r[2])
-                return
-            end
-            return table.unpack(r, 2)
+            return defer.run1(__body)
         end
     end
 
-    local r = table.pack(xpcall(__body, debug.traceback))
-    __defered.f(table.unpack(__defered.args))
-    if not r[1] then
-        print(r[2])
-        return
-    end
-    return table.unpack(r, 2)
+    return defer.run1(__body)
 end
 
 defer5 = function()
-    local __defered = {}
-    local __body = function ()
+    local __body = function (__defered)
         do
             local i = 0
             while i < 3 do
@@ -169,34 +120,18 @@ defer5 = function()
         end
     end
 
-    local r = table.pack(xpcall(__body, debug.traceback))
-    for i = #__defered, 1, -1 do
-        local x = __defered[i]
-        x.f(table.unpack(x.args))
-    end
-    if not r[1] then
-        print(r[2])
-        return
-    end
-    return table.unpack(r, 2)
+    return defer.runN(__body)
 end
 
 defer6 = function(n1, n2)
-    local __defered = {}
-    local __body = function ()
+    local __body = function (__defered)
         __defered.args = {}
         __defered.f = function ()
             print(n1, n2)
         end
     end
 
-    local r = table.pack(xpcall(__body, debug.traceback))
-    __defered.f(table.unpack(__defered.args))
-    if not r[1] then
-        print(r[2])
-        return
-    end
-    return table.unpack(r, 2)
+    return defer.run1(__body)
 end
 
 return function() end

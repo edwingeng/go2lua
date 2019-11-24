@@ -36,6 +36,7 @@ checkModName("order")
 checkModName("panic")
 checkModName("range")
 checkModName("slice")
+checkModName("struct")
 checkModName("switch")
 checkModName("var")
 checkModName("xstring")
@@ -51,6 +52,7 @@ local hashes = {
 	init_06c2b30c = true,
 	init_04c8fc80 = true,
 	init_588a9963 = true,
+	init_6fe654c1 = true,
 	init_56f38f74 = true,
 	init_0cb6e51f = true,
 	init_86e7cc0b = true,
@@ -59,7 +61,7 @@ local hashCount = 0
 for _ in pairs(hashes) do
 	hashCount = hashCount + 1
 end
-if hashCount ~= 13 then
+if hashCount ~= 14 then
 	error("hash collision detected")
 end
 
@@ -73,6 +75,7 @@ local init_ed9fed76 = require("order")
 local init_06c2b30c = require("panic")
 local init_04c8fc80 = require("range")
 local init_588a9963 = require("slice")
+local init_6fe654c1 = require("struct")
 local init_56f38f74 = require("switch")
 local init_0cb6e51f = require("var")
 local init_86e7cc0b = require("xstring")
@@ -96,6 +99,7 @@ init_ed9fed76() -- order
 init_06c2b30c() -- panic
 init_04c8fc80() -- range
 init_588a9963() -- slice
+init_6fe654c1() -- struct
 init_56f38f74() -- switch
 init_0cb6e51f() -- var
 init_86e7cc0b() -- xstring

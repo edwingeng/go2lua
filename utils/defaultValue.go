@@ -43,6 +43,10 @@ func DefaultValue(typ types.Type) string {
 		return "goslice.make(nil, 0)"
 
 	case *types.Struct:
+		if t.NumFields() == 0 {
+			return "gostruct.empty"
+		}
+
 		var sb strings.Builder
 		sb.WriteString("{")
 		for i := 0; i < t.NumFields(); i++ {

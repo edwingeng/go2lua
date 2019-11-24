@@ -1097,7 +1097,6 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.printValueSpec(n, funcNode)
 
 	case *ast.TypeSpec:
-		this.printTypeSpec(n, funcNode)
 
 	case *ast.BadDecl:
 		// nothing to do
@@ -1113,7 +1112,12 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 				this.CurrentNode = s
 				this.Println()
 			}
-			this.walkImpl(s, funcNode)
+			switch n.Tok {
+			case token.TYPE:
+				this.printTypeSpec(s.(*ast.TypeSpec), funcNode)
+			default:
+				this.walkImpl(s, funcNode)
+			}
 		}
 
 	case *ast.FuncDecl:
@@ -1227,7 +1231,60 @@ func (this *Walker) printValueSpec(spec *ast.ValueSpec, funcNode ast.Node) {
 }
 
 func (this *Walker) printTypeSpec(spec *ast.TypeSpec, funcNode ast.Node) {
+	if spec.Doc != nil {
+		this.walkImpl(spec.Doc, funcNode)
+	}
 
+	switch t := spec.Type.(type) {
+	case *ast.StructType:
+		this.Print("__newObj_")
+		this.walkImpl(spec.Name, funcNode)
+		this.Println(" = function ()")
+		this.Indent++
+		if t.Fields != nil && len(t.Fields.List) > 0 {
+			this.Println("return {")
+			this.Indent++
+			for _, f := range t.Fields.List {
+				if len(f.Names) > 0 {
+					this.walkIdentList(f.Names, funcNode)
+				} else {
+					typeName := fmt.Sprint(f.Type)
+					idx := strings.LastIndexAny(typeName, "./")
+					if idx >= 0 {
+						typeName = typeName[idx+1:]
+					}
+					this.Print(typeName)
+				}
+
+				this.Print(" = ")
+				typ := this.Pass.TypesInfo.TypeOf(f.Type)
+				defVal := utils.DefaultValue(typ)
+				if len(f.Names) > 1 {
+					for j := 0; j < len(f.Names); j++ {
+						if j > 0 {
+							this.Print(", ")
+						}
+						this.Print(defVal)
+					}
+				} else {
+					this.Print(defVal)
+				}
+				this.Println(",")
+			}
+			this.Indent--
+			this.Println("}")
+		} else {
+			this.Println("return gostruct.empty")
+		}
+		this.Indent--
+		this.Print("end")
+	default:
+		panic(ErrNotImplemented)
+	}
+
+	if spec.Comment != nil {
+		this.walkImpl(spec.Comment, funcNode)
+	}
 }
 
 func (this *Walker) printCaseClauseLabel(newline bool, node ast.Node) {

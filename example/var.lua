@@ -72,6 +72,28 @@ var1 = function()
     local _, _, _ = myString1, myString2, MyString3
 end
 
+__newObj_Foo1 = function ()
+    return {
+        String1 = "",
+        Num1 = 0,
+    }
+end
+
+__newObj_Foo2 = function ()
+    return {
+        Foo1 = {String1 = "", Num1 = 0},
+        String2 = "",
+        Num2 = 0,
+    }
+end
+
+__newObj_Foo3 = function ()
+    return {
+        string = "",
+        int = 0,
+    }
+end
+
 var2 = function()
     local myArray1 = {0, 0, 0}
     local myArray2 = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}

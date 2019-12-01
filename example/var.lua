@@ -15,9 +15,9 @@ do
 end
 
 myNumber1 = 0
-MyNumber2 = 0
+MyNumber2 = undef
 myNumber3, myNumber4 = 0, 0
-MyNumber5, MyNumber6 = 0, 0
+MyNumber5, MyNumber6 = undef, undef
 myNumber7, MyNumber8 = 0, 0
 
 myString1 = ""

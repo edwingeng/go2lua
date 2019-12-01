@@ -88,6 +88,9 @@ order4 = order1 - 10
 order5 = order6()
 _ = order4
 _ = order5
+MyNumber2 = 200
+MyNumber5 = 500
+MyNumber6 = 600
 
 init_20af73cf() -- defer
 init_dd73c24f() -- for

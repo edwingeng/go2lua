@@ -1,9 +1,9 @@
 package example
 
 var myNumber1 int
-var MyNumber2 int
+var MyNumber2 int = 200
 var myNumber3, myNumber4 int
-var MyNumber5, MyNumber6 int
+var MyNumber5, MyNumber6 = 500, 600
 var myNumber7, MyNumber8 int
 
 var (

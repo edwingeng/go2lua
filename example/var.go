@@ -17,15 +17,15 @@ func var1() {
 	var myInt32 int32
 	var myInt64 int64
 	var myInt int
-	var myUint8 uint8
-	var myUint16 uint16
-	var myUint32 uint32
-	var myUint64 uint64
-	var myUint uint
+	var myUint8 uint8 = 0b1011
+	var myUint16 uint16 = 0o660
+	var myUint32 uint32 = 0660
+	var myUint64 uint64 = 0x01_FF
+	var myUint uint = 1_000_000
 	var myRune rune
 	var myByte byte
 	var myUintptr uintptr
-	var myFloat32 float32
+	var myFloat32 float32 = 3.14
 	var myFloat64 float64
 	var myBool bool
 	var myString string

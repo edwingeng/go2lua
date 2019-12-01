@@ -461,17 +461,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.Print(n.Name)
 
 	case *ast.BasicLit:
-		switch n.Kind {
-		case token.CHAR:
-			for i, r := range n.Value {
-				if i == 1 {
-					this.Print(int(r))
-					break
-				}
-			}
-		default:
-			this.Print(n.Value)
-		}
+		this.printBasicLit(n)
 
 	case *ast.Ellipsis:
 		if n.Elt != nil {
@@ -1313,10 +1303,10 @@ func (this *Walker) walkCaseClause(node *ast.CaseClause, hasTag bool, switchLabe
 		switch e := expr.(type) {
 		case *ast.BasicLit:
 			if hasTag {
-				this.Printf("__switch == %s ", e.Value)
-			} else {
-				this.Printf("%s ", e.Value)
+				this.Printf("__switch == ")
 			}
+			this.printBasicLit(e)
+			this.Print(" ")
 		case *ast.Ident:
 			if hasTag {
 				this.Printf("__switch == %s ", e.Name)
@@ -1362,6 +1352,38 @@ func (this *Walker) printBinarySubexpr(e ast.Expr, n *ast.BinaryExpr, funcNode a
 		this.Print(")")
 	} else {
 		this.walkImpl(e, funcNode)
+	}
+}
+
+func (this *Walker) printBasicLit(basicLit *ast.BasicLit) {
+	switch basicLit.Kind {
+	case token.CHAR:
+		for i, r := range basicLit.Value {
+			if i == 1 {
+				this.Print(int(r))
+				return
+			}
+		}
+	case token.INT:
+		leN := len(basicLit.Value)
+		if leN <= 1 {
+			this.Print(basicLit.Value)
+			return
+		}
+		if strings.HasPrefix(basicLit.Value, "0") {
+			if leN >= 2 {
+				if ch := basicLit.Value[1]; ch == 'x' || ch == 'X' {
+					this.Print(strings.ReplaceAll(basicLit.Value, "_", ""))
+					return
+				}
+			}
+			n, _ := strconv.ParseInt(basicLit.Value, 0, 64)
+			this.Printf("%#x", n)
+			return
+		}
+		this.Print(strings.ReplaceAll(basicLit.Value, "_", ""))
+	default:
+		this.Print(basicLit.Value)
 	}
 }
 

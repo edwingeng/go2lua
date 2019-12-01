@@ -31,6 +31,7 @@ checkModName("for")
 checkModName("func")
 checkModName("hello")
 checkModName("if")
+checkModName("iota")
 checkModName("operator")
 checkModName("order")
 checkModName("panic")
@@ -47,6 +48,7 @@ local hashes = {
 	init_5fb63259 = true,
 	init_fb0077f9 = true,
 	init_ad493904 = true,
+	init_1d2559c8 = true,
 	init_2abb52c7 = true,
 	init_ed9fed76 = true,
 	init_06c2b30c = true,
@@ -61,7 +63,7 @@ local hashCount = 0
 for _ in pairs(hashes) do
 	hashCount = hashCount + 1
 end
-if hashCount ~= 14 then
+if hashCount ~= 15 then
 	error("hash collision detected")
 end
 
@@ -70,6 +72,7 @@ local init_dd73c24f = require("for")
 local init_5fb63259 = require("func")
 local init_fb0077f9 = require("hello")
 local init_ad493904 = require("if")
+local init_1d2559c8 = require("iota")
 local init_2abb52c7 = require("operator")
 local init_ed9fed76 = require("order")
 local init_06c2b30c = require("panic")
@@ -97,6 +100,7 @@ init_dd73c24f() -- for
 init_5fb63259() -- func
 init_fb0077f9() -- hello
 init_ad493904() -- if
+init_1d2559c8() -- iota
 init_2abb52c7() -- operator
 init_ed9fed76() -- order
 init_06c2b30c() -- panic

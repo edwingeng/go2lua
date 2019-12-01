@@ -35,6 +35,8 @@ type Walker struct {
 	nextIds        map[string]int
 	funcScopeNames map[ast.Node]map[string]struct{}
 	pkgLevelData   *PkgLevelData
+	iotaValue      int
+	iotaFound      bool
 
 	NumErrors        int
 	FuncInit         bool
@@ -458,7 +460,12 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		this.printError(errors.New("bad expression detected"), n)
 
 	case *ast.Ident:
-		this.Print(n.Name)
+		if n.Name != "iota" {
+			this.Print(n.Name)
+		} else {
+			this.Print(this.iotaValue)
+			this.iotaFound = true
+		}
 
 	case *ast.BasicLit:
 		this.printBasicLit(n)
@@ -1084,7 +1091,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		}
 
 	case *ast.ValueSpec:
-		this.printValueSpec(n, funcNode)
+		this.printValueSpec(n, false, funcNode)
 
 	case *ast.TypeSpec:
 
@@ -1097,6 +1104,8 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 		}
 		this.CurrentNode = n
 		this.Print()
+		var prevValueSpec *ast.ValueSpec
+		var iotaSeq bool
 		for i, s := range n.Specs {
 			if i > 0 {
 				this.CurrentNode = s
@@ -1105,6 +1114,23 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			switch n.Tok {
 			case token.TYPE:
 				this.printTypeSpec(s.(*ast.TypeSpec), funcNode)
+			case token.CONST:
+				this.iotaValue = i
+				spec := s.(*ast.ValueSpec)
+				this.iotaFound = false
+				this.printValueSpec(spec, true, funcNode)
+				if spec.Values == nil {
+					this.walkIdentList(prevValueSpec.Names, funcNode)
+					if iotaSeq {
+						this.Print(" + 1")
+					}
+				} else {
+					iotaSeq = false
+				}
+				prevValueSpec = spec
+				if this.iotaFound {
+					iotaSeq = true
+				}
 			default:
 				this.walkImpl(s, funcNode)
 			}
@@ -1171,7 +1197,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 	}
 }
 
-func (this *Walker) printValueSpec(spec *ast.ValueSpec, funcNode ast.Node) {
+func (this *Walker) printValueSpec(spec *ast.ValueSpec, bConst bool, funcNode ast.Node) {
 	if spec.Doc != nil {
 		this.walkImpl(spec.Doc, funcNode)
 	}
@@ -1181,6 +1207,20 @@ func (this *Walker) printValueSpec(spec *ast.ValueSpec, funcNode ast.Node) {
 	}
 	this.walkIdentList(spec.Names, funcNode)
 	this.Print(" = ")
+
+	if bConst {
+		if spec.Values != nil {
+			for i, x := range spec.Values {
+				if i > 0 {
+					this.Print(", ")
+				}
+				if x != nil {
+					this.walkImpl(x, funcNode)
+				}
+			}
+		}
+		return
+	}
 
 	if len(spec.Values) > 0 {
 		if funcNode != nil {

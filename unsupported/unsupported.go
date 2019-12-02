@@ -84,6 +84,10 @@ func checkUnsupportedTypeImpl(typ types.Type) error {
 	case *types.Signature:
 	case *types.Interface:
 	case *types.Map:
+		switch t.Key().Underlying().(type) {
+		case nil, *types.Array, *types.Struct, *types.Tuple, *types.Interface:
+			return newError()
+		}
 	case *types.Chan:
 		return newError()
 	case *types.Named:

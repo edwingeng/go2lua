@@ -104,10 +104,21 @@ func var2() {
 
 	var map1 map[string]int
 	var map2 map[int]struct{}
-	var map3 map[Foo1]int
-	var map4 map[Foo1]Foo3
+	var map3 map[*Foo1]int
+	var map4 map[*Foo1]Foo3
 	var map5 map[int]*Foo1
 	var map6 map[int]interface{}
+	var map7 = map[int]int{
+		1: 10,
+		2: 20,
+	}
+	var map8 = map[string]int{
+		"1": 10,
+		"2": 20,
+	}
+	var map9 = map[*Foo1]struct{}{
+		&foo1: {},
+	}
 
 	_, _ = myArray1, myArray2
 	_, _ = mySlice1, mySlice2
@@ -116,4 +127,5 @@ func var2() {
 	_, _, _ = fn1, fn2, fn3
 	_, _ = obj1, obj2
 	_, _, _, _, _, _ = map1, map2, map3, map4, map5, map6
+	_, _, _ = map7, map8, map9
 }

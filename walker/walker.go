@@ -496,6 +496,23 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			case *ast.StructType:
 				this.walkImpl(n.Type, funcNode)
 				st = t
+			case *ast.MapType:
+				this.Print("{")
+				this.Indent++
+				for i, x := range n.Elts {
+					if i > 0 {
+						this.Print(", ")
+					}
+					kv := x.(*ast.KeyValueExpr)
+					this.CurrentNode = kv
+					this.Print("[")
+					this.walkImpl(kv.Key, funcNode)
+					this.Print("] = ")
+					this.walkImpl(kv.Value, funcNode)
+				}
+				this.Indent--
+				this.Print("}")
+				return
 			default:
 				panic(ErrNotImplemented)
 			}
@@ -674,6 +691,7 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 	case *ast.KeyValueExpr:
 		this.walkImpl(n.Key, funcNode)
+		this.Print(" = ")
 		this.walkImpl(n.Value, funcNode)
 
 	// Types

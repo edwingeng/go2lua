@@ -121,6 +121,9 @@ var2 = function()
     local map4 = {}
     local map5 = {}
     local map6 = {}
+    local map7 = {[1] = 10, [2] = 20}
+    local map8 = {["1"] = 10, ["2"] = 20}
+    local map9 = {[foo1] = {}}
 
     local _, _ = myArray1, myArray2
     local _, _ = mySlice1, mySlice2
@@ -129,6 +132,7 @@ var2 = function()
     local _, _, _ = fn1, fn2, fn3
     local _, _ = obj1, obj2
     local _, _, _, _, _, _ = map1, map2, map3, map4, map5, map6
+    local _, _, _ = map7, map8, map9
 end
 
 return function() end

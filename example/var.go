@@ -129,4 +129,8 @@ func var2() {
 	_, _ = obj1, obj2
 	_, _, _, _, _, _ = map1, map2, map3, map4, map5, map6
 	_, _, _ = map7, map8, map9
+
+	delete(map7, 1)
+	delete(map8, "1")
+	delete(map9, &foo1)
 }

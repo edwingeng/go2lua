@@ -1537,6 +1537,13 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRema
 		case "copy":
 			this.Print("goslice.copy")
 			return false, false, false, false
+		case "delete":
+			this.Print("")
+			this.walkImpl(n.Args[0], funcNode)
+			this.Print("[")
+			this.walkImpl(n.Args[1], funcNode)
+			this.Print("] = nil")
+			return false, false, false, true
 		}
 	} else {
 		switch funcNameIdent.Name {

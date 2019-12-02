@@ -134,6 +134,10 @@ var2 = function()
     local _, _ = obj1, obj2
     local _, _, _, _, _, _ = map1, map2, map3, map4, map5, map6
     local _, _, _ = map7, map8, map9
+
+    map7[1] = nil
+    map8["1"] = nil
+    map9[foo1] = nil
 end
 
 return function() end

@@ -47,4 +47,14 @@ func2 = function()
     end)
 end
 
+func3 = function()
+    local a = 0
+    local b, c = "", ""
+
+    if a > 0 then
+        return 100, "b", "c"
+    end
+    return a, b, c
+end
+
 return function() end

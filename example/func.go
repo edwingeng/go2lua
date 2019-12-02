@@ -29,3 +29,10 @@ func func2() {
 		println(n)
 	})
 }
+
+func func3() (a int, b, c string) {
+	if a > 0 {
+		return 100, "b", "c"
+	}
+	return
+}

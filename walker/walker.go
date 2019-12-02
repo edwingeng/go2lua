@@ -807,7 +807,31 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 
 	case *ast.ReturnStmt:
 		this.Print("return ")
-		this.walkExprList(n.Results, funcNode)
+		if len(n.Results) > 0 {
+			this.walkExprList(n.Results, funcNode)
+		} else {
+			var results *ast.FieldList
+			switch f := funcNode.(type) {
+			case *ast.FuncDecl:
+				results = f.Type.Results
+			case *ast.FuncLit:
+				results = f.Type.Results
+			default:
+				panic("impossible")
+			}
+			if results != nil && len(results.List) > 0 && len(results.List[0].Names) > 0 {
+				var i int
+				for _, r := range results.List {
+					for _, name := range r.Names {
+						if i > 0 {
+							this.Print(", ")
+						}
+						this.walkImpl(name, node)
+						i++
+					}
+				}
+			}
+		}
 
 	case *ast.BranchStmt:
 		switch n.Tok {
@@ -1557,19 +1581,53 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRema
 	return false, false, false, false
 }
 
-func (this *Walker) printFuncBody(funcBody *ast.BlockStmt, node ast.Node) {
-	_, ok := this.FuncsHavingDefer[node]
+func (this *Walker) printFuncBody(funcBody *ast.BlockStmt, funcNode ast.Node) {
+	_, ok := this.FuncsHavingDefer[funcNode]
 	if ok {
 		this.Indent++
 		this.Println("local __body = function (__defered)")
 	}
 
-	this.walkImpl(funcBody, node)
+	var results *ast.FieldList
+	switch f := funcNode.(type) {
+	case *ast.FuncDecl:
+		results = f.Type.Results
+	case *ast.FuncLit:
+		results = f.Type.Results
+	default:
+		panic("impossible")
+	}
+	if results != nil && len(results.List) > 0 && len(results.List[0].Names) > 0 {
+		this.Indent++
+		for _, r := range results.List {
+			this.Print("local ")
+			for i, name := range r.Names {
+				if i > 0 {
+					this.Print(", ")
+				}
+				this.walkImpl(name, funcNode)
+			}
+			this.Print(" = ")
+			typ := this.Pass.TypesInfo.TypeOf(r.Type)
+			defVal := utils.DefaultValue(typ)
+			for i := range r.Names {
+				if i > 0 {
+					this.Print(", ")
+				}
+				this.Print(defVal)
+			}
+			this.Println()
+		}
+		this.Println()
+		this.Indent--
+	}
+
+	this.walkImpl(funcBody, funcNode)
 
 	if ok {
 		this.Println("end")
 		this.Println()
-		if this.FuncsHavingDefer[node] == 1 {
+		if this.FuncsHavingDefer[funcNode] == 1 {
 			this.Println("return godefer.run1(__body)")
 		} else {
 			this.Println("return godefer.runN(__body)")

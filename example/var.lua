@@ -105,6 +105,7 @@ var2 = function()
     local foo2 = {Foo1 = {String1 = "", Num1 = 0}, String2 = "", Num2 = 0}
     local foo3 = {string = "", int = 0}
     local foo4 = {Num = 0, string = ""}
+    local foo5 = {String1 = "", Num1 = 0}
 
     local ptr4 = undef
 
@@ -127,7 +128,7 @@ var2 = function()
 
     local _, _ = myArray1, myArray2
     local _, _ = mySlice1, mySlice2
-    local _, _, _, _ = foo1, foo2, foo3, foo4
+    local _, _, _, _, _ = foo1, foo2, foo3, foo4, foo5
     local _ = ptr4
     local _, _, _ = fn1, fn2, fn3
     local _, _ = obj1, obj2

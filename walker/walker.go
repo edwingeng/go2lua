@@ -619,11 +619,14 @@ func (this *Walker) walkImpl(node ast.Node, funcNode ast.Node) {
 			this.walkExprList(n.Args, funcNode)
 			this.Print(")")
 		} else {
-			arrayRemaining, stripParen, appendLen := this.printFuncName(n, funcNode)
+			arrayRemainder, stripParen, appendLen, skipAll := this.printFuncName(n, funcNode)
+			if skipAll {
+				break
+			}
 			if !stripParen {
 				this.Print("(")
 			}
-			if !arrayRemaining {
+			if !arrayRemainder {
 				this.walkExprList(n.Args, funcNode)
 			} else {
 				this.walkExprList(n.Args[:1], funcNode)
@@ -1469,22 +1472,22 @@ func (this *Walker) printPlusOneIndex(index ast.Expr, funcNode ast.Node) {
 	this.Print(" + 1")
 }
 
-func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRemaining, stripParen, appendLen bool) {
+func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRemainder, stripParen, appendLen, skipAll bool) {
 	funcNameIdent, ok := n.Fun.(*ast.Ident)
 	if !ok {
-		return false, false, false
+		return false, false, false, false
 	}
 	obj := this.Pass.TypesInfo.ObjectOf(funcNameIdent)
 	if obj == nil {
-		return false, false, false
+		return false, false, false, false
 	}
 	if obj.Pkg() != nil {
 		this.Print(funcNameIdent.Name)
-		return false, false, false
+		return false, false, false, false
 	}
 	if str, ok := go2LuaFuncMap[funcNameIdent.Name]; ok {
 		this.Print(str)
-		return false, false, false
+		return false, false, false, false
 	}
 	if len(n.Args) == 1 {
 		switch funcNameIdent.Name {
@@ -1495,13 +1498,13 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRema
 					switch t.Kind() {
 					case types.String, types.UntypedString:
 						this.Print("string.len")
-						return false, false, false
+						return false, false, false, false
 					}
 				case *types.Slice, *types.Array:
-					return false, true, true
+					return false, true, true, false
 				case *types.Map:
 					this.Print("#")
-					return false, true, false
+					return false, true, false, false
 				}
 			}
 			panic(ErrNotImplemented)
@@ -1510,13 +1513,17 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRema
 				switch typ.Underlying().(type) {
 				case *types.Slice, *types.Array:
 					this.Print("goslice.cap")
-					return false, false, false
+					return false, false, false, false
 				case *types.Map:
 					this.Print("#")
-					return false, true, false
+					return false, true, false, false
 				}
 			}
 			panic(ErrNotImplemented)
+		case "new":
+			typ := this.Pass.TypesInfo.TypeOf(n.Args[0])
+			this.Print(utils.DefaultValue(typ))
+			return false, false, false, true
 		}
 	} else if len(n.Args) == 2 {
 		switch funcNameIdent.Name {
@@ -1526,21 +1533,21 @@ func (this *Walker) printFuncName(n *ast.CallExpr, funcNode ast.Node) (arrayRema
 			} else {
 				this.Print("goslice.appendSlice")
 			}
-			return false, false, false
+			return false, false, false, false
 		case "copy":
 			this.Print("goslice.copy")
-			return false, false, false
+			return false, false, false, false
 		}
 	} else {
 		switch funcNameIdent.Name {
 		case "append":
 			this.Print("goslice.appendArray")
-			return true, false, false
+			return true, false, false, false
 		}
 	}
 
 	this.Print(funcNameIdent.Name)
-	return false, false, false
+	return false, false, false, false
 }
 
 func (this *Walker) printFuncBody(funcBody *ast.BlockStmt, node ast.Node) {

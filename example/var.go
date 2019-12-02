@@ -90,6 +90,7 @@ func var2() {
 		Num int
 		string
 	}
+	var foo5 = new(Foo1)
 
 	var ptr4 *Foo1
 
@@ -122,7 +123,7 @@ func var2() {
 
 	_, _ = myArray1, myArray2
 	_, _ = mySlice1, mySlice2
-	_, _, _, _ = foo1, foo2, foo3, foo4
+	_, _, _, _, _ = foo1, foo2, foo3, foo4, foo5
 	_ = ptr4
 	_, _, _ = fn1, fn2, fn3
 	_, _ = obj1, obj2
